@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+  application:
+    name: split-ledger-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/splitledger}
+    username: ${DATABASE_USERNAME:splitledger}
+    password: ${DATABASE_PASSWORD:splitledger_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+server:
+  port: ${SERVER_PORT:8080}
