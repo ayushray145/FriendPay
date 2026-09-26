@@ -212,6 +212,7 @@ Implement:
 - [x] private UPI ID profile (view, save, remove)
 - [x] UPI payment URI and locally generated QR code
 - [x] payment request action for amounts owed to the signed-in user
+- [x] opt-in UPI sharing with accepted friends and pay-and-confirm settlement flow
 - [x] manual partial and full settlement recording from a person's ledger
 
 UPI requests only start payment in another app. They never confirm or record a settlement automatically.

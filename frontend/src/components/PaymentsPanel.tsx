@@ -6,6 +6,7 @@ import {
   getUpiPaymentLink,
   getUpiQr,
   savePaymentProfile,
+  updateFriendPaymentSharing,
   type PaymentProfile,
   type UpiPaymentRequest,
 } from '../services/payments'
@@ -88,11 +89,28 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
     setNotice('')
     try {
       await deletePaymentProfile()
-      setProfile((current) => current ? { ...current, upiId: null, updatedAt: null } : null)
+      setProfile((current) => current ? { ...current, upiId: null, updatedAt: null, sharedWithFriends: false } : null)
       setUpiId('')
       setPaymentUri('')
       setQrUrl('')
       setNotice('UPI ID removed.')
+    } catch (cause) {
+      setError(message(cause))
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function onSharingChange(sharedWithFriends: boolean) {
+    setWorking(true)
+    setError('')
+    setNotice('')
+    try {
+      const saved = await updateFriendPaymentSharing(sharedWithFriends)
+      setProfile(saved)
+      setNotice(sharedWithFriends
+        ? 'Accepted friends can now use your UPI ID to pay you.'
+        : 'Your UPI ID is no longer shared with friends.')
     } catch (cause) {
       setError(message(cause))
     } finally {
@@ -144,7 +162,10 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
               </div>
             </form>
             {profile?.upiId && <button className="quiet-button danger-text" disabled={working} onClick={() => void onDelete()}>Remove UPI ID</button>}
-            <p className="form-hint">This is stored privately on your account. Split Ledger never processes the payment.</p>
+            {profile?.upiId && <label className="upi-sharing-toggle"><input type="checkbox" checked={profile.sharedWithFriends}
+              onChange={(event) => void onSharingChange(event.target.checked)} disabled={working} />
+              <span>Share my UPI ID with accepted friends so they can pay me from Split Ledger.</span></label>}
+            <p className="form-hint">Your UPI ID stays private unless you turn on sharing above. Split Ledger never processes or confirms payments.</p>
           </div>
           <div className="payment-request-card">
             <h3>Create a payment request</h3>

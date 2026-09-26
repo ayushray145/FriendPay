@@ -5,6 +5,7 @@ export type PaymentProfile = {
   displayName: string
   upiId: string | null
   updatedAt: string | null
+  sharedWithFriends: boolean
 }
 
 export type UpiPaymentRequest = { amount: string; note: string }
@@ -22,6 +23,10 @@ export const getPaymentProfile = () => apiRequest<PaymentProfile>('/api/v1/payme
 export const savePaymentProfile = (upiId: string) => apiRequest<PaymentProfile>('/api/v1/payment-profile', {
   method: 'PUT', body: JSON.stringify({ upiId }),
 })
+export const updateFriendPaymentSharing = (sharedWithFriends: boolean) =>
+  apiRequest<PaymentProfile>('/api/v1/payment-profile/sharing', {
+    method: 'PUT', body: JSON.stringify({ sharedWithFriends }),
+  })
 export const deletePaymentProfile = () => apiRequest<void>('/api/v1/payment-profile', { method: 'DELETE' })
 
 function paymentQuery(request: UpiPaymentRequest) {
@@ -31,6 +36,9 @@ function paymentQuery(request: UpiPaymentRequest) {
 
 export const getUpiPaymentLink = (payment: UpiPaymentRequest) =>
   apiRequest<{ upiUri: string }>(`/api/v1/payment-profile/upi-link?${paymentQuery(payment)}`)
+
+export const getFriendUpiPaymentLink = (friendId: string, payment: UpiPaymentRequest) =>
+  apiRequest<{ upiUri: string }>(`/api/v1/payment-profile/friends/${friendId}/upi-link?${paymentQuery(payment)}`)
 
 export async function getUpiQr(payment: UpiPaymentRequest): Promise<Blob> {
   const response = await fetch(apiUrl(`/api/v1/payment-profile/qr?${paymentQuery(payment)}`), { credentials: 'include' })

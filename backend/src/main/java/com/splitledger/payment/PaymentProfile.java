@@ -34,6 +34,9 @@ public class PaymentProfile {
     @Column(name = "upi_id", nullable = false, length = 320)
     private String upiId;
 
+    @Column(name = "shared_with_friends", nullable = false)
+    private boolean sharedWithFriends;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -48,6 +51,7 @@ public class PaymentProfile {
     }
 
     public void updateUpiId(String upiId) { this.upiId = upiId; }
+    public void setSharedWithFriends(boolean sharedWithFriends) { this.sharedWithFriends = sharedWithFriends; }
 
     @PrePersist
     void onCreate() {
@@ -62,6 +66,7 @@ public class PaymentProfile {
     public UUID getId() { return id; }
     public AppUser getOwner() { return owner; }
     public String getUpiId() { return upiId; }
+    public boolean isSharedWithFriends() { return sharedWithFriends; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

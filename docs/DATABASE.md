@@ -7,7 +7,7 @@ The first persistence milestone uses account-owned contacts and a shared ledger 
 ### Tables and relationships
 
 - `app_users`: one row per application account, identified by the unique pair `(auth_provider, auth_provider_subject)`. No password or OAuth secret is stored.
-- `payment_profiles`: an optional private UPI ID for one application account. Only the owner can view, change, or remove it.
+- `payment_profiles`: an optional UPI ID for one application account and a `shared_with_friends` opt-in flag (false by default). Only the owner can view, change, or remove the ID. Accepted friends can use it to create a payment link only when the owner opts in; the raw ID is not included in friend responses.
 - `people`: contacts owned by an `app_user`, with a display name, optional private phone number, and optional link to another `app_user`. A phone-only contact uses its normalized phone number as its display name. Phone data does not authenticate or discover an account. Contacts and ledgers are private to their owner. Accepting a friend request creates a linked contact for each account, with each account keeping its own nickname and ledger.
 - `friend_requests`: one row per request or accepted friendship, with requester, recipient, `PENDING`/`ACCEPTED`/`DECLINED` state, and each account's independent nickname for the other. A canonical user pair has at most one pending request or accepted friendship. Only the recipient can accept or decline a pending request; only either account can view or edit its own nickname. Friendship does not grant access to the other account's ledger.
 - `friend_expense_proposals`: a shared friend expense awaiting recipient approval, including sender, recipient, accepted friendship, positive amount, description, debt direction, status (`PENDING`, `DISPUTED`, `APPROVED`), and dispute/approval timestamps. Pending and disputed proposals are excluded from balances. On approval, matching private `expenses` records are written for both accounts in one transaction, with reciprocal directions.
@@ -22,7 +22,7 @@ The first persistence milestone uses account-owned contacts and a shared ledger 
 
 An account has many contacts; a contact can have many expenses and settlements. Expenses and settlements are immutable historical event records at the persistence layer for this phase. Disputed friend proposals may be edited only by the sender and must be resubmitted for approval; approved expense records remain historical events. Do not hard-delete ledger events; future corrections should use explicit reversal events. Group expenses are separately shared only among active group members; they do not expose or modify a member's private person-to-person ledger.
 
-UPI payment links and QR codes are generated from the authenticated user's own payment profile. Generating or opening a payment request does not add a settlement. A user must record a settlement manually after confirming payment externally.
+UPI payment links and QR codes are generated from the authenticated user's own payment profile. A payment link for an accepted friend is available only when that friend has opted in to sharing their UPI ID. Generating or opening a payment link does not add a settlement; the payer must confirm the external payment before the shared settlement is recorded.
 
 ### Balance rule
 

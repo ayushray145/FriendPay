@@ -113,6 +113,11 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .friend-balance-list li small { overflow: hidden; color: #89968d; font-size: 10px; text-overflow: ellipsis; }
 .friend-balance-list li > strong { color: #19764d; white-space: nowrap; }
 .friend-balance-group[aria-label="You owe them"] .friend-balance-list li > strong { color: #986b35; }
+.friend-balance-person .friend-balance-value { margin-top: 2px; color: #986b35 !important; }
+.friend-balance-payment-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
+.friend-balance-payment-actions .small-button { min-height: 32px; }
+.friend-balance-payment-actions .payment-confirmation-hint { flex-basis: 100%; text-align: right; }
+.upi-sharing-needed { color: #8a754e !important; }
 .friend-balance-empty { margin: 0; padding: 16px 14px; color: #89968d; font-size: 11px; }
 .friend-items { margin: 0; padding: 0 22px; list-style: none; }
 .friend-item { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid #f0f2f0; }
@@ -217,6 +222,9 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .payment-profile-card h3, .payment-request-card h3 { margin: 0; color: #516257; font-size: 12px; }
 .payment-profile-card > .quiet-button { margin-top: 10px; }
 .payment-profile-card > .form-hint, .payment-request-card > .form-hint { margin-top: 9px; }
+.upi-sharing-toggle { display: flex; align-items: flex-start; gap: 8px; margin-top: 13px; color: #52655a; font-size: 11px; line-height: 1.5; cursor: pointer; }
+.upi-sharing-toggle input { width: 15px; height: 15px; flex: none; margin: 1px 0 0; accent-color: #198354; }
+.upi-sharing-toggle input:disabled { cursor: wait; }
 .upi-id-field { display: flex; align-items: center; gap: 8px; }
 .upi-id-field input { flex: 1; }
 .upi-id-field input:disabled { color: #40564a; background: #f4f8f4; opacity: 1; cursor: default; }

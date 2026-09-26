@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,6 +44,13 @@ public class PaymentProfileController {
         return paymentProfileService.save(user.getApplicationUserId(), request);
     }
 
+    @PutMapping("/sharing")
+    public PaymentProfileResponse sharing(
+            @Valid @RequestBody PaymentProfileSharingRequest request,
+            @AuthenticationPrincipal ApplicationOidcUser user) {
+        return paymentProfileService.updateFriendSharing(user.getApplicationUserId(), request);
+    }
+
     @DeleteMapping
     public ResponseEntity<Void> delete(@AuthenticationPrincipal ApplicationOidcUser user) {
         paymentProfileService.delete(user.getApplicationUserId());
@@ -55,6 +63,15 @@ public class PaymentProfileController {
             @RequestParam(required = false) String note,
             @AuthenticationPrincipal ApplicationOidcUser user) {
         return new PaymentLinkResponse(paymentProfileService.paymentUri(user.getApplicationUserId(), amount, note));
+    }
+
+    @GetMapping("/friends/{friendId}/upi-link")
+    public PaymentLinkResponse friendPaymentLink(
+            @PathVariable UUID friendId,
+            @RequestParam @NotNull @DecimalMin("0.01") @Digits(integer = 17, fraction = 2) BigDecimal amount,
+            @RequestParam(required = false) String note,
+            @AuthenticationPrincipal ApplicationOidcUser user) {
+        return paymentProfileService.friendPaymentUri(user.getApplicationUserId(), friendId, amount, note);
     }
 
     @GetMapping(value = "/qr", produces = MediaType.IMAGE_PNG_VALUE)

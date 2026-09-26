@@ -7,6 +7,7 @@ export type Friend = {
   displayName: string
   nickname: string
   friendsSince: string
+  canReceivePayments: boolean
 }
 
 export type FriendRequest = {

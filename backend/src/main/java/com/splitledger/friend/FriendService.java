@@ -5,6 +5,8 @@ import com.splitledger.user.AppUserRepository;
 import com.splitledger.person.Person;
 import com.splitledger.person.PersonRepository;
 import com.splitledger.security.ApplicationUserNotFoundException;
+import com.splitledger.payment.PaymentProfile;
+import com.splitledger.payment.PaymentProfileRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -19,12 +21,14 @@ public class FriendService {
     private final FriendRequestRepository friendRequestRepository;
     private final AppUserRepository appUserRepository;
     private final PersonRepository personRepository;
+    private final PaymentProfileRepository paymentProfileRepository;
 
     public FriendService(FriendRequestRepository friendRequestRepository, AppUserRepository appUserRepository,
-                         PersonRepository personRepository) {
+                         PersonRepository personRepository, PaymentProfileRepository paymentProfileRepository) {
         this.friendRequestRepository = friendRequestRepository;
         this.appUserRepository = appUserRepository;
         this.personRepository = personRepository;
+        this.paymentProfileRepository = paymentProfileRepository;
     }
 
     @Transactional
@@ -112,8 +116,11 @@ public class FriendService {
         boolean requester = request.getRequester().getId().equals(viewerId);
         AppUser other = requester ? request.getRecipient() : request.getRequester();
         String nickname = requester ? request.getRequesterNickname() : request.getRecipientNickname();
+        boolean canReceivePayments = paymentProfileRepository.findByOwnerId(other.getId())
+                .map(PaymentProfile::isSharedWithFriends).orElse(false);
         return new FriendResponse(request.getId(), other.getId(), other.getEmail(), other.getDisplayName(),
-                nickname == null || nickname.isBlank() ? other.getDisplayName() : nickname, request.getCreatedAt());
+                nickname == null || nickname.isBlank() ? other.getDisplayName() : nickname, request.getCreatedAt(),
+                canReceivePayments);
     }
 
     private UUID min(UUID left, UUID right) { return left.compareTo(right) < 0 ? left : right; }

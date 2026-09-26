@@ -14,6 +14,7 @@ import com.splitledger.group.GroupDisputeNotFoundException;
 import com.splitledger.group.InvalidGroupDisputeException;
 import com.splitledger.group.GroupNotFoundException;
 import com.splitledger.payment.PaymentProfileNotConfiguredException;
+import com.splitledger.payment.FriendPaymentUnavailableException;
 import com.splitledger.settlement.SettlementExceedsOutstandingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -90,6 +91,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(PaymentProfileNotConfiguredException.class)
     public ResponseEntity<ApiErrorResponse> paymentProfileNotConfigured(
             PaymentProfileNotConfiguredException exception, HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(FriendPaymentUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> friendPaymentUnavailable(
+            FriendPaymentUnavailableException exception, HttpServletRequest request) {
         return error(HttpStatus.CONFLICT, exception.getMessage(), request);
     }
 

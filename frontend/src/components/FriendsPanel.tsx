@@ -6,12 +6,16 @@ import {
 } from '../services/friends'
 import { getDashboard } from '../services/dashboard'
 import { getPeople } from '../services/ledger'
+import { createPersonSettlement, getFriendUpiPaymentLink } from '../services/payments'
 
 const money = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
 
+type FriendBalance = { personId: string | null; netBalance: number }
+type PaymentToConfirm = { friendUserId: string; personId: string; amount: string; upiUri: string }
+
 export default function FriendsPanel() {
   const [friends, setFriends] = useState<Friend[]>([])
-  const [friendBalances, setFriendBalances] = useState<Record<string, number>>({})
+  const [friendBalances, setFriendBalances] = useState<Record<string, FriendBalance>>({})
   const [requests, setRequests] = useState<FriendRequest[]>([])
   const [email, setEmail] = useState('')
   const [nickname, setNickname] = useState('')
@@ -22,6 +26,7 @@ export default function FriendsPanel() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [showRequests, setShowRequests] = useState(false)
+  const [paymentToConfirm, setPaymentToConfirm] = useState<PaymentToConfirm | null>(null)
 
   async function refresh() {
     setLoading(true)
@@ -36,7 +41,10 @@ export default function FriendsPanel() {
       const balanceByPersonId = new Map(dashboard.people.map((person) => [person.personId, person.netBalance]))
       const nextBalances = Object.fromEntries(friendList.map((friend) => {
         const personId = personIdByFriendId.get(friend.userId)
-        return [friend.userId, personId ? balanceByPersonId.get(personId) ?? 0 : 0]
+        return [friend.userId, {
+          personId: personId ?? null,
+          netBalance: personId ? balanceByPersonId.get(personId) ?? 0 : 0,
+        }]
       }))
       setFriends(friendList)
       setRequests(friendRequests)
@@ -49,6 +57,45 @@ export default function FriendsPanel() {
   }
 
   useEffect(() => { void refresh() }, [])
+
+  async function beginPayment(friend: Friend) {
+    const balance = friendBalances[friend.userId]
+    if (!balance?.personId || balance.netBalance >= 0) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    setPaymentToConfirm(null)
+    const amount = Math.abs(balance.netBalance).toFixed(2)
+    try {
+      const link = await getFriendUpiPaymentLink(friend.userId, {
+        amount,
+        note: `Split Ledger: ${friend.nickname}`,
+      })
+      setPaymentToConfirm({ friendUserId: friend.userId, personId: balance.personId, amount, upiUri: link.upiUri })
+    } catch (cause) {
+      setError(message(cause, 'Could not prepare this UPI payment.'))
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function confirmPayment() {
+    if (!paymentToConfirm) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    try {
+      await createPersonSettlement(paymentToConfirm.personId, paymentToConfirm.amount, 'USER_OWES_PERSON')
+      const friend = friends.find((item) => item.userId === paymentToConfirm.friendUserId)
+      setPaymentToConfirm(null)
+      setNotice(`Payment recorded${friend ? ` with ${friend.nickname}` : ''}.`)
+      await refresh()
+    } catch (cause) {
+      setError(message(cause, 'Could not record the payment. Refresh the balance and try again.'))
+    } finally {
+      setWorking(false)
+    }
+  }
 
   async function onSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -155,14 +202,17 @@ export default function FriendsPanel() {
       <section className="friend-list-card pending-friend-balances" aria-labelledby="pending-friend-balances-title">
         <div className="panel-heading"><div><p className="eyebrow">Unsettled balances</p><h2 id="pending-friend-balances-title">Pending transactions</h2>
           <p className="muted">Approved friend expenses less recorded settlements. Expenses awaiting approval are under Expenses.</p></div>
-          <span className="count-pill">{friends.filter((friend) => (friendBalances[friend.userId] ?? 0) !== 0).length}</span></div>
+          <span className="count-pill">{friends.filter((friend) => (friendBalances[friend.userId]?.netBalance ?? 0) !== 0).length}</span></div>
         {loading ? <p className="friend-state" aria-live="polite">Loading balances…</p> : friends.length === 0 ?
           <p className="friend-state">Accept a friend request to see shared balances here.</p> : <div className="friend-balance-columns">
-            <FriendBalanceGroup title="They owe you" friends={friends.filter((friend) => (friendBalances[friend.userId] ?? 0) > 0)}
+            <FriendBalanceGroup title="They owe you" friends={friends.filter((friend) => (friendBalances[friend.userId]?.netBalance ?? 0) > 0)}
               balances={friendBalances} empty="No friends currently owe you." />
-            <FriendBalanceGroup title="You owe them" friends={friends.filter((friend) => (friendBalances[friend.userId] ?? 0) < 0)}
-              balances={friendBalances} empty="You don’t currently owe any friends." />
+            <FriendBalanceGroup title="You owe them" friends={friends.filter((friend) => (friendBalances[friend.userId]?.netBalance ?? 0) < 0)}
+              balances={friendBalances} empty="You don’t currently owe any friends." working={working}
+              payment={paymentToConfirm} onPay={(friend) => void beginPayment(friend)} onConfirm={() => void confirmPayment()} />
           </div>}
+        {error && <p className="payment-feedback error" role="alert">{error}</p>}
+        {notice && <p className="payment-feedback success" role="status">{notice}</p>}
       </section>
 
       <section className="friend-list-card friends-subgroup" aria-labelledby="friends-title">
@@ -173,9 +223,9 @@ export default function FriendsPanel() {
             {friends.map((friend) => <li className="friend-item" key={friend.requestId}>
               <div className="friend-identity"><strong>{friend.nickname}</strong><span>{friend.email}</span>
                 {friend.nickname !== friend.displayName && <small>Account name: {friend.displayName}</small>}</div>
-              <div className={`friend-balance-amount ${balanceTone(friendBalances[friend.userId] ?? 0)}`}>
-                <small>{balanceLabel(friendBalances[friend.userId] ?? 0)}</small>
-                <strong>{money.format(Math.abs(friendBalances[friend.userId] ?? 0))}</strong>
+              <div className={`friend-balance-amount ${balanceTone(friendBalances[friend.userId]?.netBalance ?? 0)}`}>
+                <small>{balanceLabel(friendBalances[friend.userId]?.netBalance ?? 0)}</small>
+                <strong>{money.format(Math.abs(friendBalances[friend.userId]?.netBalance ?? 0))}</strong>
               </div>
               {editingFriend === friend.requestId ? <div className="friend-edit">
                 <input aria-label={`Nickname for ${friend.displayName}`} maxLength={80} value={editNickname}
@@ -191,19 +241,34 @@ export default function FriendsPanel() {
   )
 }
 
-function FriendBalanceGroup({ title, friends, balances, empty }: {
+function FriendBalanceGroup({ title, friends, balances, empty, working = false, payment = null, onPay, onConfirm }: {
   title: string
   friends: Friend[]
-  balances: Record<string, number>
+  balances: Record<string, FriendBalance>
   empty: string
+  working?: boolean
+  payment?: PaymentToConfirm | null
+  onPay?: (friend: Friend) => void
+  onConfirm?: () => void
 }) {
   return <section className="friend-balance-group" aria-label={title}>
     <h3>{title}</h3>
     {friends.length === 0 ? <p className="friend-balance-empty">{empty}</p> :
-      <ul className="friend-balance-list">{friends.map((friend) => <li key={friend.requestId}>
-        <span><strong>{friend.nickname}</strong><small>{friend.email}</small></span>
-        <strong>{money.format(Math.abs(balances[friend.userId] ?? 0))}</strong>
-      </li>)}</ul>}
+      <ul className="friend-balance-list">{friends.map((friend) => {
+        const friendBalance = balances[friend.userId]
+        const currentPayment = payment?.friendUserId === friend.userId ? payment : null
+        return <li key={friend.requestId}>
+        <span className="friend-balance-person"><strong>{friend.nickname}</strong><small>{friend.email}</small>
+          <strong className="friend-balance-value">{money.format(Math.abs(friendBalance?.netBalance ?? 0))}</strong></span>
+        {onPay && <div className="friend-balance-payment-actions">
+          {!friend.canReceivePayments ? <small className="upi-sharing-needed">UPI not shared by this friend</small> : currentPayment ? <>
+            <a className="small-button upi-open-button" href={currentPayment.upiUri}>Open UPI app</a>
+            <button className="small-button" disabled={working} onClick={onConfirm}>I paid — clear due</button>
+            <small className="payment-confirmation-hint">Confirm only after completing payment in your UPI app.</small>
+          </> : <button className="small-button" disabled={working || !friendBalance?.personId}
+            onClick={() => onPay(friend)}>{working ? 'Preparing…' : 'Pay & clear due'}</button>}
+        </div>}
+      </li>})}</ul>}
   </section>
 }
 

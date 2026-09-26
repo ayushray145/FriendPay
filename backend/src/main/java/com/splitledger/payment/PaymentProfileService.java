@@ -5,6 +5,9 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.splitledger.security.ApplicationUserNotFoundException;
+import com.splitledger.friend.FriendRequestNotFoundException;
+import com.splitledger.friend.FriendRequestRepository;
+import com.splitledger.friend.FriendRequestStatus;
 import com.splitledger.user.AppUser;
 import com.splitledger.user.AppUserRepository;
 import java.io.ByteArrayOutputStream;
@@ -23,10 +26,13 @@ public class PaymentProfileService {
 
     private final PaymentProfileRepository profileRepository;
     private final AppUserRepository userRepository;
+    private final FriendRequestRepository friendRequestRepository;
 
-    public PaymentProfileService(PaymentProfileRepository profileRepository, AppUserRepository userRepository) {
+    public PaymentProfileService(PaymentProfileRepository profileRepository, AppUserRepository userRepository,
+                                 FriendRequestRepository friendRequestRepository) {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
+        this.friendRequestRepository = friendRequestRepository;
     }
 
     @Transactional(readOnly = true)
@@ -35,7 +41,7 @@ public class PaymentProfileService {
                 .orElseThrow(() -> new ApplicationUserNotFoundException(userId));
         return profileRepository.findByOwnerId(userId)
                 .map(PaymentProfileResponse::from)
-                .orElseGet(() -> new PaymentProfileResponse(userId, user.getDisplayName(), null, null));
+                .orElseGet(() -> new PaymentProfileResponse(userId, user.getDisplayName(), null, null, false));
     }
 
     @Transactional
@@ -53,6 +59,13 @@ public class PaymentProfileService {
     }
 
     @Transactional
+    public PaymentProfileResponse updateFriendSharing(UUID userId, PaymentProfileSharingRequest request) {
+        PaymentProfile profile = requireProfile(userId);
+        profile.setSharedWithFriends(request.sharedWithFriends());
+        return PaymentProfileResponse.from(profileRepository.saveAndFlush(profile));
+    }
+
+    @Transactional
     public void delete(UUID userId) {
         profileRepository.findByOwnerId(userId).ifPresent(profileRepository::delete);
     }
@@ -60,6 +73,20 @@ public class PaymentProfileService {
     @Transactional(readOnly = true)
     public String paymentUri(UUID userId, BigDecimal amount, String note) {
         PaymentProfile profile = requireProfile(userId);
+        return paymentUri(profile, amount, note);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentLinkResponse friendPaymentUri(UUID userId, UUID friendId, BigDecimal amount, String note) {
+        friendRequestRepository.findBetweenUsersWithStatus(userId, friendId, FriendRequestStatus.ACCEPTED)
+                .orElseThrow(() -> new FriendRequestNotFoundException(friendId));
+        PaymentProfile profile = profileRepository.findByOwnerId(friendId)
+                .filter(PaymentProfile::isSharedWithFriends)
+                .orElseThrow(FriendPaymentUnavailableException::new);
+        return new PaymentLinkResponse(paymentUri(profile, amount, note));
+    }
+
+    private String paymentUri(PaymentProfile profile, BigDecimal amount, String note) {
         String displayName = profile.getOwner().getDisplayName();
         return "upi://pay?pa=" + encode(profile.getUpiId())
                 + "&pn=" + encode(displayName)

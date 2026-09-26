@@ -218,6 +218,8 @@ Do not create a completely separate financial system for groups.
 
 Users may optionally provide a UPI ID.
 
+The UPI ID is private by default. An account owner may opt in to share it with accepted friends so they can start a UPI payment for an outstanding balance. The app must ask the payer to confirm the external payment before recording a settlement.
+
 The application can provide:
 
 - UPI payment link
@@ -228,7 +230,7 @@ The application is NOT a bank or payment processor.
 
 Actual payment is performed through the user's UPI/banking application.
 
-Payment initiation must not automatically be treated as confirmed payment.
+Payment initiation must not automatically be treated as confirmed payment. A payer must confirm after completing the payment in their UPI app before the app records a settlement.
 
 Initially, settlement confirmation can be user-driven.
 
