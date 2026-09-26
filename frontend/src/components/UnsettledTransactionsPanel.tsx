@@ -96,9 +96,12 @@ function FriendBalanceGroup({ title, friends, balances, empty, working = false, 
       const friendBalance = balances[friend.userId]
       const currentPayment = payment?.friendUserId === friend.userId ? payment : null
       return <li key={friend.requestId}><span className="friend-balance-person"><strong>{friend.nickname}</strong><small>{friend.email}</small><strong className="friend-balance-value">{money.format(Math.abs(friendBalance?.netBalance ?? 0))}</strong></span>
-        {onPay && <div className="friend-balance-payment-actions">{!friend.canReceivePayments ? <small className="upi-sharing-needed">UPI not shared by this friend</small> : currentPayment ? <>
-          <a className="small-button upi-open-button" href={currentPayment.upiUri}>Open UPI app</a><button className="small-button" disabled={working} onClick={onConfirm}>I paid — clear due</button><small className="payment-confirmation-hint">Confirm only after completing payment in your UPI app.</small>
-        </> : <button className="small-button" disabled={working || !friendBalance?.personId} onClick={() => onPay(friend)}>{working ? 'Preparing…' : 'Pay & clear due'}</button>}</div>}
+        {onPay && <div className="friend-balance-payment-actions">{currentPayment ? <>
+          <a className="small-button upi-open-button" href={currentPayment.upiUri}>Pay now — open UPI app</a><button className="small-button" disabled={working} onClick={onConfirm}>I paid — clear due</button><small className="payment-confirmation-hint">Confirm only after completing payment in your UPI app.</small>
+        </> : <>
+          <button className="small-button" disabled={working || !friendBalance?.personId || !friend.canReceivePayments} onClick={() => onPay(friend)}>{working ? 'Preparing…' : 'Pay now'}</button>
+          {!friend.canReceivePayments && <small className="upi-sharing-needed">Your friend needs to share their UPI details in UPI payments before you can pay here.</small>}
+        </>}</div>}
       </li>
     })}</ul>}
   </section>
