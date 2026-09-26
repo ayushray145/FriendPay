@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest, apiUrl } from './api'
 
 export type PaymentProfile = {
   userId: string
@@ -33,7 +33,7 @@ export const getUpiPaymentLink = (payment: UpiPaymentRequest) =>
   apiRequest<{ upiUri: string }>(`/api/v1/payment-profile/upi-link?${paymentQuery(payment)}`)
 
 export async function getUpiQr(payment: UpiPaymentRequest): Promise<Blob> {
-  const response = await fetch(`/api/v1/payment-profile/qr?${paymentQuery(payment)}`, { credentials: 'include' })
+  const response = await fetch(apiUrl(`/api/v1/payment-profile/qr?${paymentQuery(payment)}`), { credentials: 'include' })
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null
     throw new Error(body?.message || `Request failed (${response.status})`)
@@ -42,7 +42,7 @@ export async function getUpiQr(payment: UpiPaymentRequest): Promise<Blob> {
 }
 
 export async function getMyUpiQr(): Promise<Blob> {
-  const response = await fetch('/api/v1/payment-profile/my-qr', { credentials: 'include' })
+  const response = await fetch(apiUrl('/api/v1/payment-profile/my-qr'), { credentials: 'include' })
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null
     throw new Error(body?.message || `Request failed (${response.status})`)

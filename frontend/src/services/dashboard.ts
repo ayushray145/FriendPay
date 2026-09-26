@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest, apiUrl } from './api'
 
 export type DashboardPersonBalance = {
   personId: string
@@ -27,7 +27,7 @@ export class ApiError extends Error {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { credentials: 'include' })
+  const response = await fetch(apiUrl(path), { credentials: 'include' })
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null
     throw new ApiError(

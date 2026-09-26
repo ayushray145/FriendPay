@@ -1,6 +1,8 @@
 package com.splitledger.security;
 
 import java.util.Optional;
+import java.net.URI;
+import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,15 +15,36 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfiguration {
 
     @Bean
-    CookieCsrfTokenRepository csrfTokenRepository() {
+    CookieCsrfTokenRepository csrfTokenRepository(
+            @Value("${server.servlet.session.cookie.same-site:lax}") String sameSite,
+            @Value("${server.servlet.session.cookie.secure:false}") boolean secure) {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         repository.setHeaderName("X-CSRF-TOKEN");
+        repository.setCookieCustomizer(cookie -> cookie.sameSite(sameSite).secure(secure));
         return repository;
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(
+            @Value("${APP_FRONTEND_URL:http://localhost:5173}") String frontendUrl) {
+        URI frontendUri = URI.create(frontendUrl);
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(frontendUri.getScheme() + "://" + frontendUri.getAuthority()));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "X-CSRF-TOKEN"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
@@ -30,12 +53,14 @@ public class SecurityConfiguration {
             ObjectProvider<ClientRegistrationRepository> registrationRepository,
             CookieCsrfTokenRepository csrfTokenRepository,
             GoogleOidcUserService googleOidcUserService,
-            @Value("${APP_FRONTEND_URL:http://localhost:5173}") String frontendUrl) throws Exception {
+            @Value("${APP_FRONTEND_URL:http://localhost:5173}") String frontendUrl,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
 
         Optional<ClientRegistrationRepository> clientRegistrations =
                 Optional.ofNullable(registrationRepository.getIfAvailable());
 
-        http.authorizeHttpRequests(authorize -> authorize
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/health", "/api/v1/auth/csrf", "/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions

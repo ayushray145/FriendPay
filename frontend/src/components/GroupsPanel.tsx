@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { getFriends, type Friend } from '../services/friends'
+import { apiUrl } from '../services/api'
 import {
   addGroupMember,
   createGroup,
@@ -72,7 +73,7 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
     let active = true
     setLoading(true)
     Promise.all([
-      fetch(`/api/v1/groups/${groupId}`, { credentials: 'include' }).then(readResponse<LedgerGroup>),
+      fetch(apiUrl(`/api/v1/groups/${groupId}`), { credentials: 'include' }).then(readResponse<LedgerGroup>),
       getGroupExpenses(groupId),
       getGroupBalances(groupId),
       getGroupDisputes(groupId),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, getCurrentUser, getDashboard, logout, type CurrentUser, type DashboardData } from './services/dashboard'
-import { ApiRequestError } from './services/api'
+import { ApiRequestError, apiUrl } from './services/api'
 import ExpenseWorkspace from './components/ExpenseWorkspace'
 import FriendsPanel from './components/FriendsPanel'
 import GroupsPanel from './components/GroupsPanel'
@@ -11,7 +11,7 @@ type LoadState = 'loading' | 'ready' | 'signed-out' | 'error'
 type AppView = 'overview' | 'people' | 'expenses' | 'groups' | 'payments' | 'profile'
 
 const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
-const googleLoginUrl = `${import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '')}/oauth2/authorization/google`
+const googleLoginUrl = apiUrl('/oauth2/authorization/google')
 
 export default function App() {
   const [state, setState] = useState<LoadState>('loading')
