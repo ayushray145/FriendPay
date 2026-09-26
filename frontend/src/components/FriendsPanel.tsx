@@ -4,9 +4,14 @@ import {
   sendFriendRequest, updateFriendNickname,
   type Friend, type FriendRequest,
 } from '../services/friends'
+import { getDashboard } from '../services/dashboard'
+import { getPeople } from '../services/ledger'
+
+const money = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
 
 export default function FriendsPanel() {
   const [friends, setFriends] = useState<Friend[]>([])
+  const [friendBalances, setFriendBalances] = useState<Record<string, number>>({})
   const [requests, setRequests] = useState<FriendRequest[]>([])
   const [email, setEmail] = useState('')
   const [nickname, setNickname] = useState('')
@@ -22,9 +27,20 @@ export default function FriendsPanel() {
     setLoading(true)
     setError('')
     try {
-      const [friendList, friendRequests] = await Promise.all([getFriends(), getFriendRequests()])
+      const [friendList, friendRequests, people, dashboard] = await Promise.all([
+        getFriends(), getFriendRequests(), getPeople(), getDashboard(),
+      ])
+      const personIdByFriendId = new Map(
+        people.filter((person) => person.linkedUserId).map((person) => [person.linkedUserId!, person.id]),
+      )
+      const balanceByPersonId = new Map(dashboard.people.map((person) => [person.personId, person.netBalance]))
+      const nextBalances = Object.fromEntries(friendList.map((friend) => {
+        const personId = personIdByFriendId.get(friend.userId)
+        return [friend.userId, personId ? balanceByPersonId.get(personId) ?? 0 : 0]
+      }))
       setFriends(friendList)
       setRequests(friendRequests)
+      setFriendBalances(nextBalances)
     } catch (cause) {
       setError(message(cause, 'Could not load friends. Please try again.'))
     } finally {
@@ -57,7 +73,7 @@ export default function FriendsPanel() {
     setError('')
     try {
       const friend = await acceptFriendRequest(request.id)
-      setFriends((current) => [...current, friend].sort((a, b) => a.nickname.localeCompare(b.nickname)))
+      await refresh()
       setRequests((current) => current.filter((item) => item.id !== request.id))
       setNotice(`You and ${friend.nickname} are now friends.`)
     } catch (cause) {
@@ -136,6 +152,19 @@ export default function FriendsPanel() {
           </ul>}
       </section>
 
+      <section className="friend-list-card pending-friend-balances" aria-labelledby="pending-friend-balances-title">
+        <div className="panel-heading"><div><p className="eyebrow">Unsettled balances</p><h2 id="pending-friend-balances-title">Pending transactions</h2>
+          <p className="muted">Approved friend expenses less recorded settlements. Expenses awaiting approval are under Expenses.</p></div>
+          <span className="count-pill">{friends.filter((friend) => (friendBalances[friend.userId] ?? 0) !== 0).length}</span></div>
+        {loading ? <p className="friend-state" aria-live="polite">Loading balances…</p> : friends.length === 0 ?
+          <p className="friend-state">Accept a friend request to see shared balances here.</p> : <div className="friend-balance-columns">
+            <FriendBalanceGroup title="They owe you" friends={friends.filter((friend) => (friendBalances[friend.userId] ?? 0) > 0)}
+              balances={friendBalances} empty="No friends currently owe you." />
+            <FriendBalanceGroup title="You owe them" friends={friends.filter((friend) => (friendBalances[friend.userId] ?? 0) < 0)}
+              balances={friendBalances} empty="You don’t currently owe any friends." />
+          </div>}
+      </section>
+
       <section className="friend-list-card friends-subgroup" aria-labelledby="friends-title">
         <div className="panel-heading"><div><p className="eyebrow">People</p><h2 id="friends-title">Friends</h2><p className="muted">Accepted connections. Nicknames are private and ledgers remain private.</p></div>
           <span className="count-pill">{friends.length}</span></div>
@@ -144,6 +173,10 @@ export default function FriendsPanel() {
             {friends.map((friend) => <li className="friend-item" key={friend.requestId}>
               <div className="friend-identity"><strong>{friend.nickname}</strong><span>{friend.email}</span>
                 {friend.nickname !== friend.displayName && <small>Account name: {friend.displayName}</small>}</div>
+              <div className={`friend-balance-amount ${balanceTone(friendBalances[friend.userId] ?? 0)}`}>
+                <small>{balanceLabel(friendBalances[friend.userId] ?? 0)}</small>
+                <strong>{money.format(Math.abs(friendBalances[friend.userId] ?? 0))}</strong>
+              </div>
               {editingFriend === friend.requestId ? <div className="friend-edit">
                 <input aria-label={`Nickname for ${friend.displayName}`} maxLength={80} value={editNickname}
                   onChange={(event) => setEditNickname(event.target.value)} />
@@ -156,6 +189,34 @@ export default function FriendsPanel() {
       {!loading && <button className="quiet-button friend-refresh" onClick={() => void refresh()}>Refresh requests</button>}
     </div>
   )
+}
+
+function FriendBalanceGroup({ title, friends, balances, empty }: {
+  title: string
+  friends: Friend[]
+  balances: Record<string, number>
+  empty: string
+}) {
+  return <section className="friend-balance-group" aria-label={title}>
+    <h3>{title}</h3>
+    {friends.length === 0 ? <p className="friend-balance-empty">{empty}</p> :
+      <ul className="friend-balance-list">{friends.map((friend) => <li key={friend.requestId}>
+        <span><strong>{friend.nickname}</strong><small>{friend.email}</small></span>
+        <strong>{money.format(Math.abs(balances[friend.userId] ?? 0))}</strong>
+      </li>)}</ul>}
+  </section>
+}
+
+function balanceLabel(balance: number) {
+  if (balance > 0) return 'Owes you'
+  if (balance < 0) return 'You owe'
+  return 'Settled'
+}
+
+function balanceTone(balance: number) {
+  if (balance > 0) return 'owes-you'
+  if (balance < 0) return 'you-owe'
+  return 'settled'
 }
 
 function message(cause: unknown, fallback: string) {

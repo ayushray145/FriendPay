@@ -100,6 +100,20 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .friends-subgroup .panel-heading .eyebrow { margin-bottom: 5px; }
 .friends-subgroup .panel-heading h2 { margin: 0; color: #25382d; font-size: 17px; }
 .requests-panel { border-color: #dce9de; }
+.pending-friend-balances .panel-heading h2 { margin: 0; color: #25382d; font-size: 17px; }
+.pending-friend-balances .panel-heading .muted { max-width: 600px; margin: 6px 0 0; font-size: 11px; line-height: 1.5; }
+.friend-balance-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 0 22px 20px; }
+.friend-balance-group { overflow: hidden; border: 1px solid #edf0ed; border-radius: 12px; background: #fcfdfc; }
+.friend-balance-group h3 { margin: 0; padding: 13px 14px; border-bottom: 1px solid #edf0ed; color: #53675a; font-size: 12px; }
+.friend-balance-list { margin: 0; padding: 0 14px; list-style: none; }
+.friend-balance-list li { display: flex; min-height: 57px; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid #f0f2f0; }
+.friend-balance-list li:last-child { border-bottom: 0; }
+.friend-balance-list li > span { display: grid; min-width: 0; gap: 3px; }
+.friend-balance-list li strong { color: #33443a; font-size: 12px; }
+.friend-balance-list li small { overflow: hidden; color: #89968d; font-size: 10px; text-overflow: ellipsis; }
+.friend-balance-list li > strong { color: #19764d; white-space: nowrap; }
+.friend-balance-group[aria-label="You owe them"] .friend-balance-list li > strong { color: #986b35; }
+.friend-balance-empty { margin: 0; padding: 16px 14px; color: #89968d; font-size: 11px; }
 .friend-items { margin: 0; padding: 0 22px; list-style: none; }
 .friend-item { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid #f0f2f0; }
 .friend-item:last-child { border-bottom: 0; }
@@ -107,6 +121,11 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .friend-identity strong { overflow: hidden; color: #33443a; font-size: 13px; text-overflow: ellipsis; }
 .friend-identity span, .friend-identity small { overflow: hidden; color: #89968d; font-size: 11px; text-overflow: ellipsis; }
 .friend-identity small { color: #a0aaa3; font-size: 10px; }
+.friend-balance-amount { display: grid; gap: 3px; margin-left: auto; text-align: right; }
+.friend-balance-amount small { color: #89968d; font-size: 10px; }
+.friend-balance-amount strong { color: #33443a; font-size: 12px; white-space: nowrap; }
+.friend-balance-amount.owes-you strong { color: #19764d; }
+.friend-balance-amount.you-owe strong { color: #986b35; }
 .friend-actions, .friend-edit { display: flex; align-items: center; gap: 7px; }
 .friend-actions .quiet-button, .friend-item > .quiet-button, .friend-edit .quiet-button { padding: 7px 9px; font-size: 11px; }
 .friend-status { padding: 6px 10px; border-radius: 99px; color: #8a754e; background: #faf4e9; font-size: 10px; font-weight: 700; }
@@ -341,6 +360,8 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
   .friend-add-form button { justify-self: end; }
   .friend-items { padding-inline: 17px; }
   .friend-item { align-items: flex-start; flex-direction: column; padding: 13px 0; }
+  .friend-balance-columns { grid-template-columns: 1fr; padding-inline: 17px; }
+  .friend-balance-amount { margin-left: 0; text-align: left; }
   .friend-actions, .friend-edit { flex-wrap: wrap; }
   .friend-edit input { flex: 1 1 130px; }
   .welcome-row { align-items: flex-start; margin-bottom: 22px; }
