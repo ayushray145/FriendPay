@@ -114,6 +114,21 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .friend-balance-list li > strong { color: #19764d; white-space: nowrap; }
 .friend-balance-group[aria-label="You owe them"] .friend-balance-list li > strong { color: #986b35; }
 .friend-balance-person .friend-balance-value { margin-top: 2px; color: #986b35 !important; }
+.unsettled-card > .panel-heading { min-height: 112px; align-items: center; padding: 22px 26px; }
+.unsettled-card > .panel-heading .eyebrow { margin-bottom: 7px; }
+.unsettled-card .friend-balance-columns { gap: 16px; padding: 18px 26px 22px; }
+.unsettled-card .friend-balance-group { min-width: 0; }
+.unsettled-card .friend-balance-group h3 { padding: 14px 17px; font-size: 13px; }
+.unsettled-card .friend-balance-list { padding: 0 17px; }
+.unsettled-card .friend-balance-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 16px; padding: 12px 0; }
+.friend-balance-main { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
+.unsettled-card .friend-balance-person { gap: 4px; }
+.unsettled-card .friend-balance-person strong { font-size: 13px; }
+.unsettled-card .friend-balance-value { color: #986b35; font-size: 14px; white-space: nowrap; }
+.unsettled-card .friend-balance-payment-actions { grid-column: 1 / -1; justify-content: flex-start; padding-top: 2px; }
+.unsettled-card .friend-balance-payment-actions .payment-confirmation-hint { text-align: left; }
+.unsettled-card > .friend-refresh { justify-self: end; margin: 0 26px 18px; }
+.unsettled-card .friend-balance-empty { min-height: 74px; display: flex; align-items: center; padding-inline: 17px; }
 .friend-balance-payment-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
 .friend-balance-payment-actions .small-button { min-height: 32px; }
 .friend-balance-payment-actions .payment-confirmation-hint { flex-basis: 100%; text-align: right; }
@@ -369,6 +384,9 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
   .friend-items { padding-inline: 17px; }
   .friend-item { align-items: flex-start; flex-direction: column; padding: 13px 0; }
   .friend-balance-columns { grid-template-columns: 1fr; padding-inline: 17px; }
+  .unsettled-card > .panel-heading { min-height: 0; align-items: flex-start; padding: 18px; }
+  .unsettled-card .friend-balance-columns { gap: 12px; padding: 14px 17px 18px; }
+  .unsettled-card > .friend-refresh { margin: 0 17px 16px; }
   .friend-balance-amount { margin-left: 0; text-align: left; }
   .friend-actions, .friend-edit { flex-wrap: wrap; }
   .friend-edit input { flex: 1 1 130px; }

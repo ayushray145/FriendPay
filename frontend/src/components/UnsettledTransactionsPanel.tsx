@@ -73,7 +73,7 @@ export default function UnsettledTransactionsPanel() {
     <section className="welcome-row people-page-heading">
       <div><p className="eyebrow">Balances with friends</p><h1>Unsettled</h1><p className="muted">See who owes you and what you owe. Expenses awaiting approval are under Expenses.</p></div>
     </section>
-    <section className="friend-list-card pending-friend-balances" aria-labelledby="unsettled-title">
+    <section className="friend-list-card pending-friend-balances unsettled-card" aria-labelledby="unsettled-title">
       <div className="panel-heading"><div><p className="eyebrow">Unsettled balances</p><h2 id="unsettled-title">Pending transactions</h2><p className="muted">Balances include approved friend expenses less recorded settlements.</p></div><span className="count-pill">{unsettledCount}</span></div>
       {loading ? <p className="friend-state" aria-live="polite">Loading balances…</p> : friends.length === 0 ?
         <p className="friend-state">Accept a friend request to see shared balances here.</p> : <div className="friend-balance-columns">
@@ -95,7 +95,7 @@ function FriendBalanceGroup({ title, friends, balances, empty, working = false, 
     {friends.length === 0 ? <p className="friend-balance-empty">{empty}</p> : <ul className="friend-balance-list">{friends.map((friend) => {
       const friendBalance = balances[friend.userId]
       const currentPayment = payment?.friendUserId === friend.userId ? payment : null
-      return <li key={friend.requestId}><span className="friend-balance-person"><strong>{friend.nickname}</strong><small>{friend.email}</small><strong className="friend-balance-value">{money.format(Math.abs(friendBalance?.netBalance ?? 0))}</strong></span>
+      return <li key={friend.requestId}><div className="friend-balance-main"><span className="friend-balance-person"><strong>{friend.nickname}</strong><small>{friend.email}</small></span><strong className="friend-balance-value">{money.format(Math.abs(friendBalance?.netBalance ?? 0))}</strong></div>
         {onPay && <div className="friend-balance-payment-actions">{currentPayment ? <>
           <a className="small-button upi-open-button" href={currentPayment.upiUri}>Pay now — open UPI app</a><button className="small-button" disabled={working} onClick={onConfirm}>I paid — clear due</button><small className="payment-confirmation-hint">Confirm only after completing payment in your UPI app.</small>
         </> : <>
