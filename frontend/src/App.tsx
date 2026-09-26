@@ -3,12 +3,13 @@ import { ApiError, getCurrentUser, getDashboard, logout, type CurrentUser, type 
 import { ApiRequestError, apiUrl } from './services/api'
 import ExpenseWorkspace from './components/ExpenseWorkspace'
 import FriendsPanel from './components/FriendsPanel'
+import UnsettledTransactionsPanel from './components/UnsettledTransactionsPanel'
 import GroupsPanel from './components/GroupsPanel'
 import PaymentsPanel from './components/PaymentsPanel'
 import ProfilePanel from './components/ProfilePanel'
 
 type LoadState = 'loading' | 'ready' | 'signed-out' | 'error'
-type AppView = 'overview' | 'people' | 'expenses' | 'groups' | 'payments' | 'profile'
+type AppView = 'overview' | 'people' | 'unsettled' | 'expenses' | 'groups' | 'payments' | 'profile'
 
 const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
 const googleLoginUrl = apiUrl('/oauth2/authorization/google')
@@ -92,6 +93,7 @@ export default function App() {
   }
   const navigation = <>
     <button className={`nav-link ${activeView === 'people' ? 'active' : ''}`} onClick={() => setActiveView('people')}><span>♧</span> People</button>
+    <button className={`nav-link ${activeView === 'unsettled' ? 'active' : ''}`} onClick={() => setActiveView('unsettled')}><span>↔</span> Unsettled</button>
     <button className={`nav-link ${activeView === 'expenses' ? 'active' : ''}`} onClick={() => setActiveView('expenses')}><span>+</span> Add expense</button>
     <button className={`nav-link ${activeView === 'groups' ? 'active' : ''}`} onClick={() => setActiveView('groups')}><span>#</span> Groups</button>
     <button className={`nav-link ${activeView === 'payments' ? 'active' : ''}`} onClick={() => setActiveView('payments')}><span>₹</span> UPI payments</button>
@@ -119,6 +121,7 @@ export default function App() {
       <nav className="mobile-nav" aria-label="Main navigation">
         <button className={`nav-link ${activeView === 'overview' ? 'active' : ''}`} aria-current={activeView === 'overview' ? 'page' : undefined} onClick={() => setActiveView('overview')}><span>◫</span>Overview</button>
         <button className={`nav-link ${activeView === 'people' ? 'active' : ''}`} aria-current={activeView === 'people' ? 'page' : undefined} onClick={() => setActiveView('people')}><span>♧</span>People</button>
+        <button className={`nav-link ${activeView === 'unsettled' ? 'active' : ''}`} aria-current={activeView === 'unsettled' ? 'page' : undefined} onClick={() => setActiveView('unsettled')}><span>↔</span>Due</button>
         <button className={`nav-link ${activeView === 'expenses' ? 'active' : ''}`} aria-current={activeView === 'expenses' ? 'page' : undefined} onClick={() => setActiveView('expenses')}><span>+</span>Expense</button>
         <button className={`nav-link ${activeView === 'groups' ? 'active' : ''}`} aria-current={activeView === 'groups' ? 'page' : undefined} onClick={() => setActiveView('groups')}><span>#</span>Groups</button>
         <button className={`nav-link ${activeView === 'payments' ? 'active' : ''}`} aria-current={activeView === 'payments' ? 'page' : undefined} onClick={() => setActiveView('payments')}><span>₹</span>UPI</button>
@@ -152,6 +155,7 @@ export default function App() {
           </>}
 
           {activeView === 'people' && <FriendsPanel />}
+          {activeView === 'unsettled' && <UnsettledTransactionsPanel />}
 
           {activeView === 'expenses' && <ExpenseWorkspace onExpenseCreated={() => setReloadKey((current) => current + 1)} />}
           {activeView === 'groups' && <GroupsPanel currentUserId={user?.id ?? ''} />}
