@@ -74,6 +74,16 @@ public class PaymentProfileController {
         return paymentProfileService.friendPaymentUri(user.getApplicationUserId(), friendId, amount, note);
     }
 
+    @GetMapping(value = "/friends/{friendId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> friendQr(
+            @PathVariable UUID friendId,
+            @RequestParam @NotNull @DecimalMin("0.01") @Digits(integer = 17, fraction = 2) BigDecimal amount,
+            @RequestParam(required = false) String note,
+            @AuthenticationPrincipal ApplicationOidcUser user) {
+        byte[] image = paymentProfileService.friendQrCode(user.getApplicationUserId(), friendId, amount, note);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG).body(image);
+    }
+
     @GetMapping(value = "/qr", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> qr(
             @RequestParam @NotNull @DecimalMin("0.01") @Digits(integer = 17, fraction = 2) BigDecimal amount,

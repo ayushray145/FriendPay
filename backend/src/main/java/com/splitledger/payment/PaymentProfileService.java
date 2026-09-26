@@ -78,12 +78,22 @@ public class PaymentProfileService {
 
     @Transactional(readOnly = true)
     public PaymentLinkResponse friendPaymentUri(UUID userId, UUID friendId, BigDecimal amount, String note) {
+        PaymentProfile profile = requireFriendSharedProfile(userId, friendId);
+        return new PaymentLinkResponse(paymentUri(profile, amount, note));
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] friendQrCode(UUID userId, UUID friendId, BigDecimal amount, String note) {
+        PaymentProfile profile = requireFriendSharedProfile(userId, friendId);
+        return createQrCode(paymentUri(profile, amount, note));
+    }
+
+    private PaymentProfile requireFriendSharedProfile(UUID userId, UUID friendId) {
         friendRequestRepository.findBetweenUsersWithStatus(userId, friendId, FriendRequestStatus.ACCEPTED)
                 .orElseThrow(() -> new FriendRequestNotFoundException(friendId));
-        PaymentProfile profile = profileRepository.findByOwnerId(friendId)
+        return profileRepository.findByOwnerId(friendId)
                 .filter(PaymentProfile::isSharedWithFriends)
                 .orElseThrow(FriendPaymentUnavailableException::new);
-        return new PaymentLinkResponse(paymentUri(profile, amount, note));
     }
 
     private String paymentUri(PaymentProfile profile, BigDecimal amount, String note) {

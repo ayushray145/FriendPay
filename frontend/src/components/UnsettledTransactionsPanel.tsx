@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getDashboard } from '../services/dashboard'
 import { getPeople } from '../services/ledger'
-import { getFriendUpiPaymentLink } from '../services/payments'
+import { getFriendUpiPaymentLink, getFriendUpiQr } from '../services/payments'
 import {
   approveFriendSettlementReport, createFriendSettlementReport, getFriendSettlementReports, getFriends,
   rejectFriendSettlementReport, type Friend, type FriendSettlementReport,
@@ -21,6 +21,10 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
   const [notice, setNotice] = useState('')
   const [payment, setPayment] = useState<PaymentToConfirm | null>(null)
   const [paymentReference, setPaymentReference] = useState('')
+  const [qrUrl, setQrUrl] = useState('')
+  const [qrLoading, setQrLoading] = useState(false)
+
+  useEffect(() => () => { if (qrUrl) URL.revokeObjectURL(qrUrl) }, [qrUrl])
 
   async function refresh() {
     setLoading(true)
@@ -49,7 +53,7 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
   async function beginPayment(friend: Friend) {
     const balance = balances[friend.userId]
     if (!balance?.personId || balance.netBalance >= 0) return
-    setWorking(true); setError(''); setNotice(''); setPayment(null); setPaymentReference('')
+    setWorking(true); setError(''); setNotice(''); setPayment(null); setPaymentReference(''); setQrUrl('')
     const amount = Math.abs(balance.netBalance).toFixed(2)
     try {
       const link = await getFriendUpiPaymentLink(friend.userId, { amount, note: `Split Ledger: ${friend.nickname}` })
@@ -57,6 +61,21 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
     } catch (cause) {
       setError(message(cause, 'Could not prepare this UPI payment.'))
     } finally { setWorking(false) }
+  }
+
+  async function toggleQr(friend: Friend) {
+    if (qrUrl) { setQrUrl(''); return }
+    if (!payment || payment.friendUserId !== friend.userId) return
+    setQrLoading(true); setError('')
+    try {
+      const image = await getFriendUpiQr(friend.userId, {
+        amount: payment.amount,
+        note: `Split Ledger: ${friend.nickname}`,
+      })
+      setQrUrl(URL.createObjectURL(image))
+    } catch (cause) {
+      setError(message(cause, 'Could not create the payment QR code.'))
+    } finally { setQrLoading(false) }
   }
 
   async function confirmPayment() {
@@ -67,6 +86,7 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
       const friend = friends.find((item) => item.userId === payment.friendUserId)
       setPayment(null)
       setPaymentReference('')
+      setQrUrl('')
       setNotice(`Payment report sent${friend ? ` to ${friend.nickname}` : ''}. The balance will clear after they approve it.`)
       await refresh()
     } catch (cause) {
@@ -114,7 +134,7 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
       {loading ? <p className="friend-state" aria-live="polite">Loading balances…</p> : friends.length === 0 ?
         <p className="friend-state">Accept a friend request to see shared balances here.</p> : <div className="friend-balance-columns">
           <FriendBalanceGroup title="They owe you" friends={owingYou} balances={balances} empty="No friends currently owe you." />
-          <FriendBalanceGroup title="You owe them" friends={youOwe} balances={balances} empty="You don’t currently owe any friends." working={working} payment={payment} reports={reports} paymentReference={paymentReference} onPaymentReferenceChange={setPaymentReference} onPay={(friend) => void beginPayment(friend)} onConfirm={() => void confirmPayment()} />
+          <FriendBalanceGroup title="You owe them" friends={youOwe} balances={balances} empty="You don’t currently owe any friends." working={working} payment={payment} reports={reports} paymentReference={paymentReference} qrUrl={qrUrl} qrLoading={qrLoading} onPaymentReferenceChange={setPaymentReference} onPay={(friend) => void beginPayment(friend)} onToggleQr={(friend) => void toggleQr(friend)} onConfirm={() => void confirmPayment()} />
         </div>}
       {outgoingReports.length > 0 && <section className="outgoing-reports" aria-label="Payment reports you sent"><h3>Payment reports you sent</h3><ul className="settlement-report-history">{outgoingReports.map((report) => <li key={report.id}>
         <span><strong>{report.otherNickname}</strong><small>{money.format(report.amount)} · {new Date(report.createdAt).toLocaleDateString()}</small></span>
@@ -127,11 +147,11 @@ export default function UnsettledTransactionsPanel({ onLedgerChanged }: { onLedg
   </div>
 }
 
-function FriendBalanceGroup({ title, friends, balances, empty, working = false, payment = null, reports = [], paymentReference = '', onPaymentReferenceChange, onPay, onConfirm }: {
+function FriendBalanceGroup({ title, friends, balances, empty, working = false, payment = null, reports = [], paymentReference = '', qrUrl = '', qrLoading = false, onPaymentReferenceChange, onPay, onToggleQr, onConfirm }: {
   title: string; friends: Friend[]; balances: Record<string, FriendBalance>; empty: string; working?: boolean
   payment?: PaymentToConfirm | null; reports?: FriendSettlementReport[]
-  paymentReference?: string; onPaymentReferenceChange?: (reference: string) => void
-  onPay?: (friend: Friend) => void; onConfirm?: () => void
+  paymentReference?: string; qrUrl?: string; qrLoading?: boolean; onPaymentReferenceChange?: (reference: string) => void
+  onPay?: (friend: Friend) => void; onToggleQr?: (friend: Friend) => void; onConfirm?: () => void
 }) {
   return <section className="friend-balance-group" aria-label={title}><h3>{title}</h3>
     {friends.length === 0 ? <p className="friend-balance-empty">{empty}</p> : <ul className="friend-balance-list">{friends.map((friend) => {
@@ -141,7 +161,8 @@ function FriendBalanceGroup({ title, friends, balances, empty, working = false, 
         && report.otherUserId === friend.userId && report.status === 'PENDING')
       return <li key={friend.requestId}><div className="friend-balance-main"><span className="friend-balance-person"><strong>{friend.nickname}</strong><small>{friend.email}</small></span><strong className="friend-balance-value">{money.format(Math.abs(friendBalance?.netBalance ?? 0))}</strong></div>
         {onPay && <div className="friend-balance-payment-actions">{currentPayment ? <>
-          <a className="small-button upi-open-button" href={currentPayment.upiUri}>Pay now — open UPI app</a>
+          <div className="payment-options"><a className="small-button upi-open-button" href={currentPayment.upiUri}>Open UPI app</a><button className="quiet-button" type="button" disabled={qrLoading} onClick={() => onToggleQr?.(friend)}>{qrLoading ? 'Preparing QR…' : qrUrl ? 'Hide QR' : 'Show QR'}</button></div>
+          {qrUrl && <div className="friend-payment-qr"><img src={qrUrl} alt={`UPI payment QR for ${friend.nickname}, amount ${money.format(Number(currentPayment.amount))}`} /><p>Scan with a UPI app to pay <strong>{money.format(Number(currentPayment.amount))}</strong> to {friend.nickname}.</p></div>}
           <label className="payment-reference-field">UPI transaction reference (optional)<input value={paymentReference} maxLength={80} pattern="[A-Za-z0-9._/-]*" onChange={(event) => onPaymentReferenceChange?.(event.target.value)} placeholder="Enter the reference from your UPI app" /></label>
           <button className="small-button" disabled={working} onClick={onConfirm}>I paid — request approval</button><small className="payment-confirmation-hint">Your friend checks their account before approving. The balance remains until then.</small>
         </> : pendingReport ? <small className="upi-sharing-needed">Payment reported — waiting for {friend.nickname} to approve</small> : <>

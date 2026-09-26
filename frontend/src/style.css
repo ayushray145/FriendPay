@@ -146,6 +146,11 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .settlement-report-actions .small-button, .settlement-report-actions .quiet-button { min-height: 34px; }
 .payment-reference-field { display: grid; flex: 1 1 100%; gap: 5px; color: #718078; font-size: 10px; font-weight: 600; }
 .payment-reference-field input { width: min(100%, 360px); height: 36px; padding: 0 10px; border: 1px solid #e3eae4; border-radius: 8px; color: #34483a; background: #fff; font: inherit; font-size: 11px; }
+.payment-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.friend-payment-qr { display: flex; flex: 1 1 100%; align-items: center; gap: 12px; padding: 10px; border: 1px solid #edf0ed; border-radius: 10px; background: #fff; }
+.friend-payment-qr img { width: 150px; height: 150px; image-rendering: pixelated; }
+.friend-payment-qr p { margin: 0; color: #6f7d73; font-size: 11px; line-height: 1.5; }
+.friend-payment-qr p strong { color: #25382d; }
 .outgoing-reports { margin: 0 26px 17px; padding-top: 14px; border-top: 1px solid #edf0ed; }
 .outgoing-reports h3 { margin: 0 0 6px; color: #53675a; font-size: 12px; }
 .settlement-report-history { padding: 0; }
@@ -416,6 +421,8 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
   .settlement-report-list li { grid-template-columns: minmax(0, 1fr) auto; gap: 9px 12px; }
   .settlement-report-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .outgoing-reports { margin-inline: 17px; }
+  .friend-payment-qr { align-items: flex-start; }
+  .friend-payment-qr img { width: 120px; height: 120px; }
   .friend-balance-amount { margin-left: 0; text-align: left; }
   .friend-actions, .friend-edit { flex-wrap: wrap; }
   .friend-edit input { flex: 1 1 130px; }

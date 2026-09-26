@@ -49,6 +49,15 @@ export async function getUpiQr(payment: UpiPaymentRequest): Promise<Blob> {
   return response.blob()
 }
 
+export async function getFriendUpiQr(friendId: string, payment: UpiPaymentRequest): Promise<Blob> {
+  const response = await fetch(apiUrl(`/api/v1/payment-profile/friends/${friendId}/qr?${paymentQuery(payment)}`), { credentials: 'include' })
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { message?: string } | null
+    throw new Error(body?.message || `Request failed (${response.status})`)
+  }
+  return response.blob()
+}
+
 export async function getMyUpiQr(): Promise<Blob> {
   const response = await fetch(apiUrl('/api/v1/payment-profile/my-qr'), { credentials: 'include' })
   if (!response.ok) {
