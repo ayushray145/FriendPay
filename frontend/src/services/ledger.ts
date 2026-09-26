@@ -4,6 +4,7 @@ export type PersonContact = {
   id: string
   displayName: string
   phoneNumber: string | null
+  linkedUserId: string | null
   createdAt: string
 }
 

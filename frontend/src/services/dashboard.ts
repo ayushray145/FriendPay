@@ -1,3 +1,5 @@
+import { apiRequest } from './api'
+
 export type DashboardPersonBalance = {
   personId: string
   displayName: string
@@ -27,10 +29,15 @@ export class ApiError extends Error {
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path, { credentials: 'include' })
   if (!response.ok) {
-    throw new ApiError(`Request failed (${response.status})`, response.status)
+    const body = await response.json().catch(() => null) as { message?: string } | null
+    throw new ApiError(
+      `${path} returned ${response.status}${body?.message ? `: ${body.message}` : ''}`,
+      response.status,
+    )
   }
   return response.json() as Promise<T>
 }
 
 export const getDashboard = () => getJson<DashboardData>('/api/v1/dashboard')
 export const getCurrentUser = () => getJson<CurrentUser>('/api/v1/auth/me')
+export const logout = () => apiRequest<void>('/api/v1/auth/logout', { method: 'POST' })

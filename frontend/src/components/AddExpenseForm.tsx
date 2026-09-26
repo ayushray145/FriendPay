@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { createExpense, type DebtDirection, type PersonContact } from '../services/ledger'
+import { createFriendExpenseProposal } from '../services/friends'
 
 export default function AddExpenseForm({ people, onCreated }: {
   people: PersonContact[]
@@ -14,6 +15,7 @@ export default function AddExpenseForm({ people, onCreated }: {
   const [notice, setNotice] = useState('')
 
   const selectedPersonId = people.some((person) => person.id === personId) ? personId : (people[0]?.id ?? '')
+  const selectedPerson = people.find((person) => person.id === selectedPersonId)
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -22,11 +24,17 @@ export default function AddExpenseForm({ people, onCreated }: {
     setError('')
     setNotice('')
     try {
-      await createExpense(selectedPersonId, amount, description, direction)
-      const name = people.find((person) => person.id === selectedPersonId)?.displayName ?? 'Person'
+      if (selectedPerson?.linkedUserId) {
+        await createFriendExpenseProposal(selectedPerson.linkedUserId, amount, description, direction)
+      } else {
+        await createExpense(selectedPersonId, amount, description, direction)
+      }
+      const name = selectedPerson?.displayName ?? 'Person'
       setAmount('')
       setDescription('')
-      setNotice(`Expense added to ${name}'s ledger.`)
+      setNotice(selectedPerson?.linkedUserId
+        ? `Expense request sent to ${name}. It will enter both ledgers after approval.`
+        : `Expense added to ${name}'s ledger.`)
       onCreated()
     } catch (cause) {
       setError(message(cause))
@@ -38,12 +46,12 @@ export default function AddExpenseForm({ people, onCreated }: {
   return (
     <section className="ledger-action-card primary-action-card" id="add-expense" aria-labelledby="add-expense-title">
       <h3 id="add-expense-title">Add an expense</h3>
-      <p className="muted">Quickly record who owes whom and why.</p>
+      <p className="muted">Choose a friend or contact and record who owes whom.</p>
       {people.length === 0 ? <p className="ledger-action-empty">Add a person first to record an expense.</p> : (
         <form className="ledger-action-form" onSubmit={(event) => void onSubmit(event)}>
           <label htmlFor="expense-person">Person</label>
           <select id="expense-person" value={selectedPersonId} onChange={(event) => setPersonId(event.target.value)}>
-            {people.map((person) => <option key={person.id} value={person.id}>{person.displayName}</option>)}
+            {people.map((person) => <option key={person.id} value={person.id}>{person.displayName}{person.linkedUserId ? ' · friend' : ''}</option>)}
           </select>
           <label htmlFor="expense-amount">Amount in rupees</label>
           <input id="expense-amount" type="number" min="0.01" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" required />
@@ -54,7 +62,8 @@ export default function AddExpenseForm({ people, onCreated }: {
             <option value="PERSON_OWES_USER">They owe me</option>
             <option value="USER_OWES_PERSON">I owe them</option>
           </select>
-          <button className="small-button" disabled={working}>{working ? 'Saving…' : 'Save expense'}</button>
+          <button className="small-button" disabled={working}>{working ? 'Saving…' : selectedPerson?.linkedUserId ? 'Send for approval' : 'Save expense'}</button>
+          {selectedPerson?.linkedUserId && <p className="form-hint friend-expense-note">Your friend must approve this expense before it affects either balance.</p>}
         </form>
       )}
       {error && <p className="payment-feedback error" role="alert">{error}</p>}

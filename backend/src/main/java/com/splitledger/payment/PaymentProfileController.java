@@ -65,4 +65,10 @@ public class PaymentProfileController {
         byte[] image = paymentProfileService.qrCode(user.getApplicationUserId(), amount, note);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG).body(image);
     }
+
+    @GetMapping(value = "/my-qr", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> personalQr(@AuthenticationPrincipal ApplicationOidcUser user) {
+        byte[] image = paymentProfileService.personalQrCode(user.getApplicationUserId());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG).body(image);
+    }
 }

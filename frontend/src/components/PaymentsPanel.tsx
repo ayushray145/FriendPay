@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import {
   deletePaymentProfile,
   getPaymentProfile,
+  getMyUpiQr,
   getUpiPaymentLink,
   getUpiQr,
   savePaymentProfile,
@@ -16,6 +17,8 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
   const [note, setNote] = useState('Split Ledger settlement')
   const [qrUrl, setQrUrl] = useState('')
   const [paymentUri, setPaymentUri] = useState('')
+  const [myQrUrl, setMyQrUrl] = useState('')
+  const [myQrLoading, setMyQrLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
@@ -43,6 +46,24 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
   }, [suggestedPayment])
 
   useEffect(() => () => { if (qrUrl) URL.revokeObjectURL(qrUrl) }, [qrUrl])
+  useEffect(() => () => { if (myQrUrl) URL.revokeObjectURL(myQrUrl) }, [myQrUrl])
+
+  async function onToggleMyQr() {
+    if (myQrUrl) {
+      URL.revokeObjectURL(myQrUrl)
+      setMyQrUrl('')
+      return
+    }
+    setMyQrLoading(true)
+    setError('')
+    try {
+      setMyQrUrl(URL.createObjectURL(await getMyUpiQr()))
+    } catch (cause) {
+      setError(message(cause))
+    } finally {
+      setMyQrLoading(false)
+    }
+  }
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -100,7 +121,14 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
 
   return (
     <section className="payments-panel" id="payments" aria-labelledby="payments-title">
-      <div className="payments-heading"><div><p className="eyebrow">Payment setup</p><h2 id="payments-title">UPI payments</h2><p className="muted">Save a UPI ID to let people pay you from their UPI app.</p></div></div>
+      <div className="payments-heading"><div><p className="eyebrow">Payment setup</p><h2 id="payments-title">UPI payments</h2><p className="muted">Save a UPI ID to let people pay you from their UPI app.</p></div>
+        <button className="small-button my-qr-button" type="button" onClick={() => void onToggleMyQr()} disabled={!profile?.upiId || myQrLoading}>
+          {myQrLoading ? 'Loading…' : myQrUrl ? 'Hide my QR' : 'My QR'}
+        </button>
+      </div>
+      {myQrUrl && <div className="my-qr-card"><img src={myQrUrl} alt="Your UPI QR code with no preset amount" />
+        <div><h3>My UPI QR</h3><p className="muted">Anyone can scan this in their UPI app to pay you. The amount is entered by the payer.</p>
+          <strong>{profile?.upiId}</strong></div></div>}
       {error && <p className="payment-feedback error" role="alert">{error}</p>}
       {notice && <p className="payment-feedback success" role="status">{notice}</p>}
       {loading ? <p className="group-loading">Loading payment profile…</p> : (
@@ -109,7 +137,11 @@ export default function PaymentsPanel({ suggestedPayment }: { suggestedPayment: 
             <h3>Your payment profile</h3>
             <form onSubmit={onSave} className="payment-profile-form">
               <label htmlFor="upi-id">UPI ID</label>
-              <div className="inline-form"><input id="upi-id" value={upiId} onChange={(event) => setUpiId(event.target.value)} placeholder="name@bank" maxLength={320} required /><button className="small-button" disabled={working}>{profile?.upiId ? 'Save' : 'Add UPI ID'}</button></div>
+              <div className="upi-id-field">
+                <input id="upi-id" value={upiId} onChange={(event) => setUpiId(event.target.value)} placeholder="name@bank" maxLength={320} required disabled={Boolean(profile?.upiId)} />
+                {profile?.upiId ? <span className="upi-saved-check" aria-label="UPI ID saved">✓</span> :
+                  <button className="small-button" disabled={working}>Add UPI ID</button>}
+              </div>
             </form>
             {profile?.upiId && <button className="quiet-button danger-text" disabled={working} onClick={() => void onDelete()}>Remove UPI ID</button>}
             <p className="form-hint">This is stored privately on your account. Split Ledger never processes the payment.</p>

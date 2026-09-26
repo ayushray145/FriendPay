@@ -59,6 +59,16 @@ public class GroupService {
     }
 
     @Transactional
+    public void delete(UUID ownerId, UUID groupId) {
+        LedgerGroup group = requireOwnerGroup(ownerId, groupId);
+        splitRepository.deleteAllByLedgerGroupId(groupId);
+        disputeRepository.deleteAllByLedgerGroupId(groupId);
+        expenseRepository.deleteAllByLedgerGroupId(groupId);
+        memberRepository.deleteAllByLedgerGroupId(groupId);
+        groupRepository.delete(group);
+    }
+
+    @Transactional
     public GroupMemberResponse addMember(UUID ownerId, UUID groupId, AddGroupMemberRequest request) {
         LedgerGroup group = requireOwnerGroup(ownerId, groupId);
         String email = request.email().trim().toLowerCase(Locale.ROOT);

@@ -71,6 +71,19 @@ public class PaymentProfileService {
     @Transactional(readOnly = true)
     public byte[] qrCode(UUID userId, BigDecimal amount, String note) {
         String upiUri = paymentUri(userId, amount, note);
+        return createQrCode(upiUri);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] personalQrCode(UUID userId) {
+        PaymentProfile profile = requireProfile(userId);
+        String upiUri = "upi://pay?pa=" + encode(profile.getUpiId())
+                + "&pn=" + encode(profile.getOwner().getDisplayName())
+                + "&cu=INR";
+        return createQrCode(upiUri);
+    }
+
+    private byte[] createQrCode(String upiUri) {
         try {
             var matrix = new QRCodeWriter().encode(upiUri, BarcodeFormat.QR_CODE, QR_SIZE, QR_SIZE);
             ByteArrayOutputStream output = new ByteArrayOutputStream();

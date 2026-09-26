@@ -1,6 +1,7 @@
 package com.splitledger.expense;
 
 import com.splitledger.ledger.DebtDirection;
+import com.splitledger.friend.FriendLedgerService;
 import com.splitledger.person.Person;
 import com.splitledger.person.PersonNotFoundException;
 import com.splitledger.person.PersonRepository;
@@ -24,16 +25,19 @@ public class ExpenseService {
     private final PersonRepository personRepository;
     private final AppUserRepository appUserRepository;
     private final SettlementRepository settlementRepository;
+    private final FriendLedgerService friendLedgerService;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
             PersonRepository personRepository,
             AppUserRepository appUserRepository,
-            SettlementRepository settlementRepository) {
+            SettlementRepository settlementRepository,
+            FriendLedgerService friendLedgerService) {
         this.expenseRepository = expenseRepository;
         this.personRepository = personRepository;
         this.appUserRepository = appUserRepository;
         this.settlementRepository = settlementRepository;
+        this.friendLedgerService = friendLedgerService;
     }
 
     @Transactional
@@ -90,6 +94,10 @@ public class ExpenseService {
 
     private BigDecimal settledFor(UUID ownerUserId, UUID personId, DebtDirection direction) {
         BigDecimal sum = settlementRepository.sumAmountByOwnerAndPersonAndDirection(ownerUserId, personId, direction);
-        return sum == null ? ZERO_AMOUNT : sum;
+        BigDecimal localSettlements = sum == null ? ZERO_AMOUNT : sum;
+        Person person = personRepository.findByIdAndOwnerId(personId, ownerUserId).orElseThrow();
+        if (person.getLinkedUser() == null) return localSettlements;
+        return localSettlements.add(friendLedgerService.sharedSettlementAmount(
+                ownerUserId, person.getLinkedUser().getId(), direction));
     }
 }

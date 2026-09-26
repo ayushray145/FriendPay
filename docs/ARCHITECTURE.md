@@ -148,6 +148,8 @@ Groups are shared resources. The creator is the sole owner. The owner adds regis
 
 Friend requests are different from group membership: the recipient must accept before a friendship is established. Each account can choose its own private nickname and gets its own linked ledger contact. Friend status never grants access to the other account's personal ledger.
 
+Expenses between accepted friends use a proposal lifecycle. The sender's expense remains pending and does not affect either balance until the recipient approves it. Approval writes corresponding expense records into each account's private ledger, with reciprocal direction and the same description, amount, and date. The recipient can dispute a pending proposal; the sender edits and resubmits it for approval. Settlements recorded against an approved shared friend balance are represented once as a shared event and are reflected in both accounts' private ledger views. This shared workflow is available only for accepted friends; expenses with other contacts continue to be recorded privately by the current account.
+
 ### Security principles
 
 * Never store Google passwords.

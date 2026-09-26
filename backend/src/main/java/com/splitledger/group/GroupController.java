@@ -46,6 +46,22 @@ public class GroupController {
         return groupService.get(user.getApplicationUserId(), groupId);
     }
 
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID groupId,
+            @AuthenticationPrincipal ApplicationOidcUser user) {
+        groupService.delete(user.getApplicationUserId(), groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{groupId}/delete")
+    public ResponseEntity<Void> deleteWithPost(
+            @PathVariable UUID groupId,
+            @AuthenticationPrincipal ApplicationOidcUser user) {
+        groupService.delete(user.getApplicationUserId(), groupId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{groupId}/members")
     public ResponseEntity<GroupMemberResponse> addMember(
             @PathVariable UUID groupId,

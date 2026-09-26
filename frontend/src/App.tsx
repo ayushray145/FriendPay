@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { ApiError, getCurrentUser, getDashboard, type CurrentUser, type DashboardData } from './services/dashboard'
+import { ApiError, getCurrentUser, getDashboard, logout, type CurrentUser, type DashboardData } from './services/dashboard'
 import { ApiRequestError } from './services/api'
 import ExpenseWorkspace from './components/ExpenseWorkspace'
 import FriendsPanel from './components/FriendsPanel'
 import GroupsPanel from './components/GroupsPanel'
 import PaymentsPanel from './components/PaymentsPanel'
+import ProfilePanel from './components/ProfilePanel'
 
 type LoadState = 'loading' | 'ready' | 'signed-out' | 'error'
-type AppView = 'overview' | 'people' | 'expenses' | 'groups' | 'payments'
+type AppView = 'overview' | 'people' | 'expenses' | 'groups' | 'payments' | 'profile'
 
 const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
 const googleLoginUrl = `${import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '')}/oauth2/authorization/google`
@@ -17,7 +18,10 @@ export default function App() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [loadError, setLoadError] = useState('')
   const [activeView, setActiveView] = useState<AppView>('overview')
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
 
   useEffect(() => {
     let active = true
@@ -33,6 +37,7 @@ export default function App() {
         if ((error instanceof ApiError || error instanceof ApiRequestError) && error.status === 401) {
           setState('signed-out')
         } else {
+          setLoadError(error instanceof Error ? error.message : 'An unexpected error occurred while loading your account.')
           setState('error')
         }
       })
@@ -65,6 +70,7 @@ export default function App() {
           <Brand />
           <h1>We couldn’t load your dashboard.</h1>
           <p className="muted">Check that the backend is running, then try again.</p>
+          {loadError && <p className="error-detail" role="status">{loadError}</p>}
           <button className="primary-button" onClick={() => window.location.reload()}>Try again</button>
         </section>
       </main>
@@ -72,6 +78,18 @@ export default function App() {
   }
 
   const firstName = user?.displayName?.trim().split(/\s+/)[0] || 'there'
+  async function onLogout() {
+    setLoggingOut(true)
+    setLogoutError('')
+    try {
+      await logout()
+      setState('signed-out')
+    } catch (cause) {
+      setLogoutError(cause instanceof Error ? cause.message : 'Could not log out. Please try again.')
+    } finally {
+      setLoggingOut(false)
+    }
+  }
   const navigation = <>
     <button className={`nav-link ${activeView === 'people' ? 'active' : ''}`} onClick={() => setActiveView('people')}><span>♧</span> People</button>
     <button className={`nav-link ${activeView === 'expenses' ? 'active' : ''}`} onClick={() => setActiveView('expenses')}><span>+</span> Add expense</button>
@@ -88,9 +106,14 @@ export default function App() {
           {navigation}
         </nav>
         <div className="sidebar-bottom">
-          <div className="avatar" aria-hidden="true">{firstName.charAt(0).toUpperCase()}</div>
-          <div className="user-summary"><strong>{user?.displayName}</strong><span>{user?.email}</span></div>
+          <button className="account-profile" type="button" onClick={() => setActiveView('profile')} aria-label="Open profile details">
+            <span className="avatar" aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
+            <span className="user-summary"><strong>{user?.displayName}</strong><span>{user?.email}</span></span>
+          </button>
+          <button className="logout-button" type="button" onClick={() => void onLogout()} disabled={loggingOut}
+            aria-label="Log out" title={logoutError || 'Log out'}>{loggingOut ? '…' : '↪'}</button>
         </div>
+        {logoutError && <p className="logout-error" role="alert">{logoutError}</p>}
       </aside>
 
       <nav className="mobile-nav" aria-label="Main navigation">
@@ -102,7 +125,11 @@ export default function App() {
       </nav>
 
       <section className="main-content">
-        <header className="topbar"><span className="mobile-brand"><Brand /></span><span className="private-label"><span className="shield">✓</span> Personal ledger stays private</span></header>
+        <header className="topbar"><span className="mobile-brand"><Brand /></span><span className="private-label"><span className="shield">✓</span> Personal ledger stays private</span>
+          <button className="mobile-profile-button" type="button" onClick={() => setActiveView('profile')} aria-label="Open profile details">
+            <span className="avatar" aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
+          </button>
+        </header>
         <div className="content-wrap">
           {activeView === 'overview' && <>
             <section className="welcome-row">
@@ -124,14 +151,12 @@ export default function App() {
             </section>
           </>}
 
-          {activeView === 'people' && <>
-            <section className="welcome-row page-welcome"><div><p className="eyebrow">Your contacts</p><h1>People</h1><p className="muted">Connect with other registered Split Ledger users.</p></div></section>
-            <FriendsPanel />
-          </>}
+          {activeView === 'people' && <FriendsPanel />}
 
           {activeView === 'expenses' && <ExpenseWorkspace onExpenseCreated={() => setReloadKey((current) => current + 1)} />}
           {activeView === 'groups' && <GroupsPanel currentUserId={user?.id ?? ''} />}
           {activeView === 'payments' && <PaymentsPanel suggestedPayment={null} />}
+          {activeView === 'profile' && user && <ProfilePanel user={user} />}
           <footer className="page-footer">Personal balances are private. Shared group expenses are visible to active group members.</footer>
         </div>
       </section>

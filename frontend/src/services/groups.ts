@@ -48,6 +48,7 @@ export const getGroups = () => apiRequest<LedgerGroup[]>('/api/v1/groups')
 export const createGroup = (name: string) => apiRequest<LedgerGroup>('/api/v1/groups', {
   method: 'POST', body: JSON.stringify({ name }),
 })
+export const deleteGroup = (groupId: string) => apiRequest<void>(`/api/v1/groups/${groupId}/delete`, { method: 'POST' })
 export const addGroupMember = (groupId: string, email: string) => apiRequest<GroupMember>(`/api/v1/groups/${groupId}/members`, {
   method: 'POST', body: JSON.stringify({ email }),
 })

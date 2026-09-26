@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { getFriends, type Friend } from '../services/friends'
 import {
   addGroupMember,
   createGroup,
   createGroupExpense,
+  deleteGroup,
   getGroupBalances,
   getGroupDisputes,
   getGroupExpenses,
@@ -32,6 +34,12 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
   const [reloadKey, setReloadKey] = useState(0)
   const [groupName, setGroupName] = useState('')
   const [memberEmail, setMemberEmail] = useState('')
+  const [friends, setFriends] = useState<Friend[]>([])
+  const [friendsLoaded, setFriendsLoaded] = useState(false)
+  const [friendsLoading, setFriendsLoading] = useState(false)
+  const [friendsError, setFriendsError] = useState('')
+  const [friendToAdd, setFriendToAdd] = useState('')
+  const [showAddMembers, setShowAddMembers] = useState(false)
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [participantUserIds, setParticipantUserIds] = useState<string[] | null>(null)
@@ -45,13 +53,13 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
       .then((items) => {
         if (!active) return
         setGroups(items)
-        if (!items.some((item) => item.id === groupId)) setGroupId(items[0]?.id ?? '')
+        if (groupId && !items.some((item) => item.id === groupId)) setGroupId('')
         setError('')
       })
       .catch((cause: unknown) => { if (active) setError(message(cause)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [groupId, reloadKey])
+  }, [reloadKey])
 
   useEffect(() => {
     if (!groupId) {
@@ -114,7 +122,61 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
     }
   }
 
+  async function toggleAddMembers() {
+    const opening = !showAddMembers
+    setShowAddMembers(opening)
+    if (!opening || friendsLoaded) return
+    setFriendsLoading(true)
+    setFriendsError('')
+    try {
+      const savedFriends = await getFriends()
+      setFriends(savedFriends)
+      setFriendsLoaded(true)
+      setFriendToAdd(savedFriends.find((friend) => !group?.members.some((member) => member.userId === friend.userId))?.userId ?? '')
+    } catch (cause) {
+      setFriendsError(message(cause))
+    } finally {
+      setFriendsLoading(false)
+    }
+  }
+
+  async function onAddFriend() {
+    const selectedFriend = friends.find((friend) => friend.userId === friendToAdd)
+    if (!group || !selectedFriend || group.members.some((member) => member.userId === selectedFriend.userId)) return
+    setFriendToAdd('')
+    await submit(() => addGroupMember(group.id, selectedFriend.email), `${selectedFriend.nickname} added to the group.`)
+  }
+
+  function toggleGroup(id: string) {
+    setGroupId((current) => current === id ? '' : id)
+    setShowAddMembers(false)
+    setFriendToAdd('')
+  }
+
+  async function onDeleteGroup() {
+    if (!group || !window.confirm(`Delete “${group.name}” and permanently remove all of its members, expenses, splits, and disputes? This cannot be undone.`)) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    try {
+      await deleteGroup(group.id)
+      setGroups((current) => current.filter((item) => item.id !== group.id))
+      setGroupId('')
+      setGroup(null)
+      setExpenses([])
+      setBalances([])
+      setDisputes([])
+      setNotice(`“${group.name}” and its data were deleted.`)
+      setReloadKey((current) => current + 1)
+    } catch (cause) {
+      setError(message(cause))
+    } finally {
+      setWorking(false)
+    }
+  }
+
   const owner = group?.members.some((member) => member.userId === currentUserId && member.role === 'OWNER') ?? false
+  const availableFriends = friends.filter((friend) => !group?.members.some((member) => member.userId === friend.userId))
 
   return (
     <section className="groups-panel" id="groups" aria-labelledby="groups-title">
@@ -129,7 +191,7 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
       <div className="groups-layout">
         <aside className="group-picker" aria-label="Your groups">
           {groups.map((item) => (
-            <button key={item.id} className={`group-choice ${groupId === item.id ? 'selected' : ''}`} onClick={() => setGroupId(item.id)}>
+            <button key={item.id} className={`group-choice ${groupId === item.id ? 'selected' : ''}`} aria-expanded={groupId === item.id} onClick={() => toggleGroup(item.id)}>
               <span className="group-choice-icon" aria-hidden="true">#</span><span>{item.name}</span>
             </button>
           ))}
@@ -143,13 +205,32 @@ export default function GroupsPanel({ currentUserId }: { currentUserId: string }
         <div className="group-details">
           {loading ? <p className="group-loading" aria-live="polite">Loading groups…</p> : group ? (
             <>
-              <div className="group-title-row"><div><h3>{group.name}</h3><p className="muted">{group.members.length} members · visible to group members</p></div></div>
+              <div className="group-title-row"><div><h3>{group.name}</h3><p className="muted">{group.members.length} members · visible to group members</p></div>
+                <div className="group-title-actions">
+                  {owner && <button className="quiet-button" type="button" onClick={() => void toggleAddMembers()} aria-expanded={showAddMembers}>{showAddMembers ? 'Close member options' : 'Add members'}</button>}
+                  {owner && <button className="quiet-button danger-text group-delete-button" type="button" onClick={() => void onDeleteGroup()} disabled={working}>Delete group</button>}
+                  <button className="quiet-button group-close-button" type="button" onClick={() => toggleGroup(group.id)}>Close details</button>
+                </div>
+              </div>
 
-              {owner && <form className="group-action-form" onSubmit={(event) => { event.preventDefault(); void submit(async () => { await addGroupMember(group.id, memberEmail.trim()); setMemberEmail('') }, 'Member added to the group.') }}>
-                <label htmlFor="member-email">Add a registered user</label>
-                <div className="inline-form"><input id="member-email" type="email" value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} placeholder="Their account email" required /><button className="small-button" disabled={working}>Add user</button></div>
-                <p className="form-hint">They become a member immediately. Only you can remove members.</p>
-              </form>}
+              {owner && showAddMembers && <section className="group-action-form" aria-label="Add group members">
+                <div className="group-add-friend-row"><div><h4>Add a friend</h4><p className="form-hint">Choose an accepted friend to add directly.</p></div>
+                  {friendsLoading ? <span className="group-loading">Loading friends…</span> : <div className="inline-form">
+                    <select aria-label="Choose a friend" value={friendToAdd} onChange={(event) => setFriendToAdd(event.target.value)} disabled={!friends.length}>
+                    <option value="">{availableFriends.length ? 'Choose a friend' : friends.length ? 'All friends are members' : 'No accepted friends'}</option>
+                      {availableFriends.map((friend) =>
+                        <option key={friend.userId} value={friend.userId}>{friend.nickname}</option>)}
+                    </select>
+                    <button className="small-button" type="button" onClick={() => void onAddFriend()} disabled={working || !availableFriends.some((friend) => friend.userId === friendToAdd)}>Add friend</button>
+                  </div>}
+                </div>
+                {friendsError && <p className="groups-feedback error" role="alert">{friendsError}</p>}
+                <form onSubmit={(event) => { event.preventDefault(); void submit(async () => { await addGroupMember(group.id, memberEmail.trim()); setMemberEmail('') }, 'Member added to the group.') }}>
+                  <label htmlFor="member-email">Or add by registered email</label>
+                  <div className="inline-form"><input id="member-email" type="email" value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} placeholder="Their account email" required /><button className="small-button" disabled={working}>Add by email</button></div>
+                </form>
+                <p className="form-hint">New members join immediately. Only you can remove them.</p>
+              </section>}
 
               <div className="group-subsection">
                 <h4>Members</h4>

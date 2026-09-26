@@ -234,6 +234,8 @@ Complete:
 - [x] signed-in profile summary
 - [x] registered-user friend requests by email, recipient acceptance, and private nicknames
 - [x] create a separate private ledger contact for each account when a friend request is accepted
+- [x] friend expense approval and dispute/resubmit flow for accepted friends
+- [x] shared settlement history and balance updates in both friends' ledgers
 
 Handle:
 

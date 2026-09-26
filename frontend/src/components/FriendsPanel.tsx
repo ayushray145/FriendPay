@@ -16,6 +16,7 @@ export default function FriendsPanel() {
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [showRequests, setShowRequests] = useState(false)
 
   async function refresh() {
     setLoading(true)
@@ -95,6 +96,13 @@ export default function FriendsPanel() {
 
   return (
     <div className="friends-page">
+      <section className="welcome-row people-page-heading">
+        <div><p className="eyebrow">Your contacts</p><h1>People</h1><p className="muted">Find friends by registered email and choose your private nickname.</p></div>
+        <button className={`request-toggle${requests.length ? ' has-pending' : ''}`} type="button"
+          aria-expanded={showRequests} aria-controls="friend-requests-panel" onClick={() => setShowRequests((shown) => !shown)}>
+          <span className="request-toggle-label">Friend requests</span><span className="count-pill">{requests.length}</span>
+        </button>
+      </section>
       <section className="friend-add-card" aria-labelledby="add-friend-title">
         <div>
           <p className="eyebrow">Connect with people</p>
@@ -104,15 +112,15 @@ export default function FriendsPanel() {
         <form className="friend-add-form" onSubmit={(event) => void onSend(event)}>
           <label>Email address<input type="email" autoComplete="email" maxLength={320} value={email}
             onChange={(event) => setEmail(event.target.value)} placeholder="friend@example.com" required /></label>
-          <label>Nickname <span>(only you can see this)</span><input maxLength={80} value={nickname}
-            onChange={(event) => setNickname(event.target.value)} placeholder="e.g. Rahul" /></label>
+          <label><span className="friend-label-title">Nickname <span>(only you can see this)</span></span><input maxLength={80} value={nickname}
+            onChange={(event) => setNickname(event.target.value)} placeholder="e.g. Rahul" required /></label>
           <button className="small-button" disabled={working}>{working ? 'Sending…' : 'Send friend request'}</button>
         </form>
         {error && <p className="payment-feedback error" role="alert">{error}</p>}
         {notice && <p className="payment-feedback success" role="status">{notice}</p>}
       </section>
 
-      <section className="friend-list-card" aria-labelledby="friend-requests-title">
+      <section className="friend-list-card requests-panel" id="friend-requests-panel" aria-labelledby="friend-requests-title" hidden={!showRequests}>
         <div className="panel-heading"><div><h2 id="friend-requests-title">Friend requests</h2><p className="muted">Accept requests before someone appears as a friend.</p></div>
           <span className="count-pill">{requests.length}</span></div>
         {loading ? <p className="friend-state" aria-live="polite">Loading friend requests…</p> : requests.length === 0 ?
@@ -128,8 +136,8 @@ export default function FriendsPanel() {
           </ul>}
       </section>
 
-      <section className="friend-list-card" aria-labelledby="friends-title">
-        <div className="panel-heading"><div><h2 id="friends-title">Your friends</h2><p className="muted">Nicknames are private to your account. Ledgers remain private.</p></div>
+      <section className="friend-list-card friends-subgroup" aria-labelledby="friends-title">
+        <div className="panel-heading"><div><p className="eyebrow">People</p><h2 id="friends-title">Friends</h2><p className="muted">Accepted connections. Nicknames are private and ledgers remain private.</p></div>
           <span className="count-pill">{friends.length}</span></div>
         {loading ? <p className="friend-state" aria-live="polite">Loading friends…</p> : friends.length === 0 ?
           <p className="friend-state">Accepted friends will appear here.</p> : <ul className="friend-items">

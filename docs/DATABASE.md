@@ -10,6 +10,8 @@ The first persistence milestone uses account-owned contacts and a shared ledger 
 - `payment_profiles`: an optional private UPI ID for one application account. Only the owner can view, change, or remove it.
 - `people`: contacts owned by an `app_user`, with a display name, optional private phone number, and optional link to another `app_user`. A phone-only contact uses its normalized phone number as its display name. Phone data does not authenticate or discover an account. Contacts and ledgers are private to their owner. Accepting a friend request creates a linked contact for each account, with each account keeping its own nickname and ledger.
 - `friend_requests`: one row per request or accepted friendship, with requester, recipient, `PENDING`/`ACCEPTED`/`DECLINED` state, and each account's independent nickname for the other. A canonical user pair has at most one pending request or accepted friendship. Only the recipient can accept or decline a pending request; only either account can view or edit its own nickname. Friendship does not grant access to the other account's ledger.
+- `friend_expense_proposals`: a shared friend expense awaiting recipient approval, including sender, recipient, accepted friendship, positive amount, description, debt direction, status (`PENDING`, `DISPUTED`, `APPROVED`), and dispute/approval timestamps. Pending and disputed proposals are excluded from balances. On approval, matching private `expenses` records are written for both accounts in one transaction, with reciprocal directions.
+- `friend_settlements`: one shared settlement event between accepted friends. It is included in both accounts' private ledger calculations and history, preventing either side from recording a second independent settlement for the same payment.
 - `expenses`: an expense belongs to the account that recorded it and to one of that account's contacts. It stores a positive `NUMERIC(19, 2)` amount, description, and direction (`PERSON_OWES_USER` or `USER_OWES_PERSON`). The direction records who paid/owes for this bilateral event.
 - `settlements`: a payment record belongs to the account that recorded it and to one of its contacts. It stores a positive amount and the direction of payment, so balance calculation can subtract it from the matching debt direction while preserving history.
 - `ledger_groups`: a shared group owned by the account that created it.
@@ -18,13 +20,15 @@ The first persistence milestone uses account-owned contacts and a shared ledger 
 - `group_expense_splits`: one saved share per participating account and group expense. Shares sum exactly to the expense amount; any leftover pennies go to participants in stable user-ID order. The payer may be excluded from participants.
 - `group_disputes`: an issue raised by an active member using one of the supported issue types. `INCORRECT_AMOUNT` references an expense in the same group; `WRONGLY_ADDED` references the member's group membership. The owner reviews and resolves disputes.
 
-An account has many contacts; a contact can have many expenses and settlements. Expenses and settlements are immutable historical event records at the persistence layer for this phase. Editing, voiding, and API authorization rules will be added with the corresponding ledger/API phases. Do not hard-delete ledger events; future corrections should use explicit reversal events. Group expenses are separately shared only among active group members; they do not expose or modify a member's private person-to-person ledger.
+An account has many contacts; a contact can have many expenses and settlements. Expenses and settlements are immutable historical event records at the persistence layer for this phase. Disputed friend proposals may be edited only by the sender and must be resubmitted for approval; approved expense records remain historical events. Do not hard-delete ledger events; future corrections should use explicit reversal events. Group expenses are separately shared only among active group members; they do not expose or modify a member's private person-to-person ledger.
 
 UPI payment links and QR codes are generated from the authenticated user's own payment profile. Generating or opening a payment request does not add a settlement. A user must record a settlement manually after confirming payment externally.
 
 ### Balance rule
 
 For a contact, compute `PERSON_OWES_USER` expense amounts minus settlements paid by the person, and subtract `USER_OWES_PERSON` expense amounts minus settlements paid by the user. Positive net means the person owes the account owner. Zero and negative transaction amounts are rejected. Store each amount as decimal with two fractional digits; Java uses `BigDecimal` and no floating-point arithmetic.
+
+For linked accepted friends, approved proposals contribute reciprocal expenses to both account-owned contacts. Shared friend settlements reduce the same outstanding balance in both accounts' ledger views. Proposals that are pending or disputed contribute nothing until approved.
 
 ### Future phases
 

@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import AddExpenseForm from './AddExpenseForm'
 import AddPersonForm from './AddPersonForm'
+import FriendExpenseRequestsPanel from './FriendExpenseRequestsPanel'
 import { getPeople, type PersonContact } from '../services/ledger'
 
 export default function ExpenseWorkspace({ onExpenseCreated }: { onExpenseCreated: () => void }) {
   const [people, setPeople] = useState<PersonContact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [proposalRefreshKey, setProposalRefreshKey] = useState(0)
+
+  function onExpenseSubmitted() {
+    setProposalRefreshKey((current) => current + 1)
+    onExpenseCreated()
+  }
 
   useEffect(() => {
     let active = true
@@ -25,10 +32,11 @@ export default function ExpenseWorkspace({ onExpenseCreated }: { onExpenseCreate
       {loading ? <p className="muted" aria-live="polite">Loading your contacts…</p> : error ?
         <section className="message-card" role="alert"><p>{error}</p><button className="quiet-button" onClick={() => window.location.reload()}>Try again</button></section> :
         <section className="ledger-actions-grid" aria-label="Expense and contact actions">
-          <AddExpenseForm people={people} onCreated={onExpenseCreated} />
+          <AddExpenseForm people={people} onCreated={onExpenseSubmitted} />
           <AddPersonForm onCreated={(person) => setPeople((current) => [...current, person]
             .sort((left, right) => left.displayName.localeCompare(right.displayName)))} />
         </section>}
+      {!loading && !error && <FriendExpenseRequestsPanel refreshKey={proposalRefreshKey} onChanged={onExpenseCreated} />}
     </>
   )
 }

@@ -5,6 +5,8 @@ import com.splitledger.security.ApplicationUserNotFoundException;
 import com.splitledger.expense.ExpenseNotFoundException;
 import com.splitledger.friend.FriendAccountNotFoundException;
 import com.splitledger.friend.FriendConflictException;
+import com.splitledger.friend.FriendExpenseConflictException;
+import com.splitledger.friend.FriendExpenseNotFoundException;
 import com.splitledger.friend.FriendRequestNotFoundException;
 import com.splitledger.group.GroupConflictException;
 import com.splitledger.group.GroupAccountNotFoundException;
@@ -44,15 +46,21 @@ public class ApiExceptionHandler {
         return error(HttpStatus.NOT_FOUND, "Friend request or friendship not found", request);
     }
 
+    @ExceptionHandler(FriendExpenseNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> friendExpenseNotFound(
+            FriendExpenseNotFoundException exception, HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, "Friend expense proposal not found", request);
+    }
+
     @ExceptionHandler(FriendAccountNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> friendAccountNotFound(
             FriendAccountNotFoundException exception, HttpServletRequest request) {
         return error(HttpStatus.NOT_FOUND, exception.getMessage(), request);
     }
 
-    @ExceptionHandler(FriendConflictException.class)
+    @ExceptionHandler({FriendConflictException.class, FriendExpenseConflictException.class})
     public ResponseEntity<ApiErrorResponse> friendConflict(
-            FriendConflictException exception, HttpServletRequest request) {
+            RuntimeException exception, HttpServletRequest request) {
         return error(HttpStatus.CONFLICT, exception.getMessage(), request);
     }
 
