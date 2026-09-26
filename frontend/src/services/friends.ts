@@ -34,6 +34,19 @@ export type FriendExpenseProposal = {
   createdAt: string
 }
 
+export type FriendSettlementReport = {
+  id: string
+  direction: 'INCOMING' | 'OUTGOING'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  otherUserId: string
+  otherName: string
+  otherNickname: string
+  amount: number
+  paymentReference: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
 export const getFriends = () => apiRequest<Friend[]>('/api/v1/friends')
 export const getFriendExpenseProposals = () => apiRequest<FriendExpenseProposal[]>('/api/v1/friend-expenses')
 export const createFriendExpenseProposal = (friendUserId: string, amount: string, description: string,
@@ -63,3 +76,12 @@ export const declineFriendRequest = (id: string) => apiRequest<void>(`/api/v1/fr
 export const updateFriendNickname = (id: string, nickname: string) => apiRequest<Friend>(`/api/v1/friends/${id}/nickname`, {
   method: 'PATCH', body: JSON.stringify({ nickname }),
 })
+export const getFriendSettlementReports = () => apiRequest<FriendSettlementReport[]>('/api/v1/friend-settlement-reports')
+export const createFriendSettlementReport = (friendUserId: string, amount: string, paymentReference: string) =>
+  apiRequest<FriendSettlementReport>('/api/v1/friend-settlement-reports', {
+    method: 'POST', body: JSON.stringify({ friendUserId, amount, paymentReference }),
+  })
+export const approveFriendSettlementReport = (id: string) =>
+  apiRequest<FriendSettlementReport>(`/api/v1/friend-settlement-reports/${id}/approve`, { method: 'POST' })
+export const rejectFriendSettlementReport = (id: string) =>
+  apiRequest<FriendSettlementReport>(`/api/v1/friend-settlement-reports/${id}/reject`, { method: 'POST' })

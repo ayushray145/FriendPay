@@ -150,6 +150,8 @@ Friend requests are different from group membership: the recipient must accept b
 
 Expenses between accepted friends use a proposal lifecycle. The sender's expense remains pending and does not affect either balance until the recipient approves it. Approval writes corresponding expense records into each account's private ledger, with reciprocal direction and the same description, amount, and date. The recipient can dispute a pending proposal; the sender edits and resubmits it for approval. Settlements recorded against an approved shared friend balance are represented once as a shared event and are reflected in both accounts' private ledger views. This shared workflow is available only for accepted friends; expenses with other contacts continue to be recorded privately by the current account.
 
+For accepted friends, settlement reports are separate pending workflow records. Only the reported payer can submit a report; only the reported recipient can approve or reject it. Reports do not affect balances until approval creates one shared settlement atomically. The generic private settlement endpoint rejects accepted-friend settlements so clients cannot bypass recipient approval.
+
 ### Security principles
 
 * Never store Google passwords.

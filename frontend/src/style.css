@@ -132,6 +132,28 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .unsettled-card .friend-balance-payment-actions .payment-confirmation-hint { text-align: left; }
 .unsettled-card > .friend-refresh { justify-self: end; margin: 0 26px 18px; }
 .unsettled-card .friend-balance-empty { min-height: 74px; display: flex; align-items: center; padding-inline: 17px; }
+.settlement-approval-card .panel-heading h2 { margin: 0; color: #25382d; font-size: 17px; }
+.settlement-approval-card .panel-heading .eyebrow { margin-bottom: 6px; }
+.settlement-approval-card .panel-heading .muted { max-width: 620px; margin-top: 6px; font-size: 11px; }
+.settlement-report-list, .settlement-report-history { margin: 0; padding: 0 22px; list-style: none; }
+.settlement-report-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #f0f2f0; }
+.settlement-report-list li:last-child, .settlement-report-history li:last-child { border-bottom: 0; }
+.settlement-report-identity, .settlement-report-history li > span:first-child { display: grid; min-width: 0; gap: 4px; }
+.settlement-report-identity strong, .settlement-report-history strong { color: #33443a; font-size: 12px; }
+.settlement-report-identity small, .settlement-report-history small { color: #89968d; font-size: 10px; }
+.settlement-report-amount { color: #986b35; font-size: 14px; white-space: nowrap; }
+.settlement-report-actions { display: flex; align-items: center; gap: 8px; }
+.settlement-report-actions .small-button, .settlement-report-actions .quiet-button { min-height: 34px; }
+.payment-reference-field { display: grid; flex: 1 1 100%; gap: 5px; color: #718078; font-size: 10px; font-weight: 600; }
+.payment-reference-field input { width: min(100%, 360px); height: 36px; padding: 0 10px; border: 1px solid #e3eae4; border-radius: 8px; color: #34483a; background: #fff; font: inherit; font-size: 11px; }
+.outgoing-reports { margin: 0 26px 17px; padding-top: 14px; border-top: 1px solid #edf0ed; }
+.outgoing-reports h3 { margin: 0 0 6px; color: #53675a; font-size: 12px; }
+.settlement-report-history { padding: 0; }
+.settlement-report-history li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #f0f2f0; }
+.settlement-report-status { flex: none; padding: 5px 8px; border-radius: 99px; color: #6f7c73; background: #f0f3f0; font-size: 10px; font-weight: 600; }
+.settlement-report-status.pending { color: #91672f; background: #fbf2e4; }
+.settlement-report-status.approved { color: #19764d; background: #eaf5ee; }
+.settlement-report-status.rejected { color: #a4433c; background: #fbefed; }
 .friend-balance-payment-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
 .friend-balance-payment-actions .small-button { min-height: 32px; }
 .friend-balance-payment-actions .payment-confirmation-hint { flex-basis: 100%; text-align: right; }
@@ -390,6 +412,10 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
   .unsettled-card > .panel-heading { min-height: 0; align-items: flex-start; padding: 18px; }
   .unsettled-card .friend-balance-columns { gap: 12px; padding: 14px 17px 18px; }
   .unsettled-card > .friend-refresh { margin: 0 17px 16px; }
+  .settlement-report-list { padding-inline: 17px; }
+  .settlement-report-list li { grid-template-columns: minmax(0, 1fr) auto; gap: 9px 12px; }
+  .settlement-report-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .outgoing-reports { margin-inline: 17px; }
   .friend-balance-amount { margin-left: 0; text-align: left; }
   .friend-actions, .friend-edit { flex-wrap: wrap; }
   .friend-edit input { flex: 1 1 130px; }

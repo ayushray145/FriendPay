@@ -8,6 +8,7 @@ import com.splitledger.friend.FriendConflictException;
 import com.splitledger.friend.FriendExpenseConflictException;
 import com.splitledger.friend.FriendExpenseNotFoundException;
 import com.splitledger.friend.FriendRequestNotFoundException;
+import com.splitledger.friend.FriendSettlementReportNotFoundException;
 import com.splitledger.group.GroupConflictException;
 import com.splitledger.group.GroupAccountNotFoundException;
 import com.splitledger.group.GroupDisputeNotFoundException;
@@ -47,10 +48,10 @@ public class ApiExceptionHandler {
         return error(HttpStatus.NOT_FOUND, "Friend request or friendship not found", request);
     }
 
-    @ExceptionHandler(FriendExpenseNotFoundException.class)
+    @ExceptionHandler({FriendExpenseNotFoundException.class, FriendSettlementReportNotFoundException.class})
     public ResponseEntity<ApiErrorResponse> friendExpenseNotFound(
-            FriendExpenseNotFoundException exception, HttpServletRequest request) {
-        return error(HttpStatus.NOT_FOUND, "Friend expense proposal not found", request);
+            RuntimeException exception, HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, "Friend expense or payment report not found", request);
     }
 
     @ExceptionHandler(FriendAccountNotFoundException.class)

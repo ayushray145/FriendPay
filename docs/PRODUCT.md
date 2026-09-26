@@ -228,11 +228,11 @@ The application can provide:
 
 The application is NOT a bank or payment processor.
 
-Actual payment is performed through the user's UPI/banking application.
+Actual payment is performed through the user's UPI/banking application. Starting a payment or returning from that application does not confirm payment.
 
-Payment initiation must not automatically be treated as confirmed payment. A payer must confirm after completing the payment in their UPI app before the app records a settlement.
+For accepted friends, the payer can report that a payment was made. The report remains pending and does not change either balance until the recipient (lender) checks their account and approves it. The recipient can reject the report; rejected reports remain in history and do not change balances. Only recipient approval creates the shared settlement.
 
-Initially, settlement confirmation can be user-driven.
+For private contacts that are not accepted friends, the account owner may continue to record manually confirmed settlements in their private ledger.
 
 ## Private People Contacts
 

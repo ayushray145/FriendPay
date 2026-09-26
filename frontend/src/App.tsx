@@ -155,7 +155,7 @@ export default function App() {
           </>}
 
           {activeView === 'people' && <FriendsPanel />}
-          {activeView === 'unsettled' && <UnsettledTransactionsPanel />}
+          {activeView === 'unsettled' && <UnsettledTransactionsPanel onLedgerChanged={() => setReloadKey((current) => current + 1)} />}
 
           {activeView === 'expenses' && <ExpenseWorkspace onExpenseCreated={() => setReloadKey((current) => current + 1)} />}
           {activeView === 'groups' && <GroupsPanel currentUserId={user?.id ?? ''} />}

@@ -2,7 +2,6 @@ package com.splitledger.settlement;
 
 import com.splitledger.expense.ExpenseRepository;
 import com.splitledger.friend.FriendLedgerService;
-import com.splitledger.friend.FriendRequest;
 import com.splitledger.friend.FriendRequestRepository;
 import com.splitledger.friend.FriendRequestStatus;
 import com.splitledger.friend.FriendSettlement;
@@ -58,15 +57,13 @@ public class SettlementService {
                 ownerId, personId, request.paymentDirection()));
         BigDecimal localSettlements = amountOrZero(settlementRepository.sumAmountByOwnerAndPersonAndDirection(
                 ownerId, personId, request.paymentDirection()));
-        FriendRequest friendship = null;
         AppUser friend = person.getLinkedUser();
-        BigDecimal sharedOutstanding = ZERO;
         if (friend != null) {
-            friendship = friendRequestRepository.findBetweenUsersWithStatus(ownerId, friend.getId(),
+            var friendship = friendRequestRepository.findBetweenUsersWithStatus(ownerId, friend.getId(),
                     FriendRequestStatus.ACCEPTED).orElse(null);
             if (friendship != null) {
-                sharedOutstanding = friendLedgerService.sharedOutstanding(
-                        ownerId, friend.getId(), request.paymentDirection());
+                throw new com.splitledger.friend.FriendConflictException(
+                        "Payments between accepted friends must be reported and approved by the recipient");
             }
         }
         BigDecimal sharedSettlements = friend == null ? ZERO
@@ -79,22 +76,10 @@ public class SettlementService {
         AppUser owner = appUserRepository.findById(ownerId)
                 .orElseThrow(() -> new ApplicationUserNotFoundException(ownerId));
         Instant settledAt = request.settledAt() == null ? Instant.now() : request.settledAt();
-        BigDecimal sharedAmount = friendship == null ? ZERO : request.amount().min(sharedOutstanding);
-        FriendSettlement sharedSettlement = null;
-        if (sharedAmount.signum() > 0) {
-            AppUser payer = request.paymentDirection() == DebtDirection.PERSON_OWES_USER ? friend : owner;
-            AppUser recipient = request.paymentDirection() == DebtDirection.PERSON_OWES_USER ? owner : friend;
-            sharedSettlement = friendSettlementRepository.save(new FriendSettlement(
-                    friendship, payer, recipient, sharedAmount, settledAt, owner));
-        }
-        BigDecimal privateAmount = request.amount().subtract(sharedAmount);
-        Settlement privateSettlement = null;
-        if (privateAmount.signum() > 0) {
-            privateSettlement = settlementRepository.save(new Settlement(
-                    owner, person, privateAmount, request.paymentDirection(), settledAt));
-        }
-        UUID settlementId = sharedSettlement != null ? sharedSettlement.getId() : privateSettlement.getId();
-        return new SettlementResponse(settlementId, personId, request.amount(), request.paymentDirection(), settledAt);
+        Settlement privateSettlement = settlementRepository.save(new Settlement(
+                owner, person, request.amount(), request.paymentDirection(), settledAt));
+        return new SettlementResponse(privateSettlement.getId(), personId, request.amount(),
+                request.paymentDirection(), settledAt);
     }
 
     @Transactional(readOnly = true)
