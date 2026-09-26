@@ -123,6 +123,9 @@ h1, h2, h3 { font-family: Manrope, 'DM Sans', sans-serif; }
 .unsettled-card .friend-balance-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 16px; padding: 12px 0; }
 .friend-balance-main { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
 .unsettled-card .friend-balance-person { gap: 4px; }
+.unsettled-card .friend-balance-main .friend-balance-person { display: grid; justify-items: start; align-content: center; }
+.unsettled-card .friend-balance-main .friend-balance-person strong,
+.unsettled-card .friend-balance-main .friend-balance-person small { display: block; }
 .unsettled-card .friend-balance-person strong { font-size: 13px; }
 .unsettled-card .friend-balance-value { color: #986b35; font-size: 14px; white-space: nowrap; }
 .unsettled-card .friend-balance-payment-actions { grid-column: 1 / -1; justify-content: flex-start; padding-top: 2px; }
